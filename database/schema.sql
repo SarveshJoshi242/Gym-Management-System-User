@@ -1,61 +1,70 @@
 CREATE DATABASE IF NOT EXISTS gym_management;
 USE gym_management;
 
+-- Users Table
 CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    email VARCHAR(100) UNIQUE NOT NULL,
+    name VARCHAR(255) NOT NULL,
     password VARCHAR(255) NOT NULL,
     age INT,
-    weight DECIMAL(5,2),
-    height DECIMAL(5,2),
-    goal ENUM('weight loss', 'muscle gain', 'maintenance') DEFAULT 'maintenance',
-    role ENUM('user', 'admin') DEFAULT 'user',
+    height DOUBLE,
+    weight DOUBLE,
+    goal VARCHAR(255),
+    bmi DOUBLE,
     workout_plan TEXT,
     diet_tips TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     current_streak INT DEFAULT 0,
-    last_workout_date DATE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    last_workout_date DATE
 );
 
-CREATE TABLE IF NOT EXISTS workouts (
+-- Daily Goals Table
+CREATE TABLE IF NOT EXISTS daily_goals (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
-    exercise VARCHAR(100) NOT NULL,
-    sets INT NOT NULL,
-    reps INT NOT NULL,
-    date DATE NOT NULL,
-    status ENUM('pending', 'completed') DEFAULT 'pending',
+    calories INT,
+    water_intake DOUBLE,
+    calories_consumed INT DEFAULT 0,
+    water_consumed DOUBLE DEFAULT 0.0,
+    workout_completed BOOLEAN DEFAULT FALSE,
+    goal_date DATE NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS diet_plans (
+-- Exercises Table
+CREATE TABLE IF NOT EXISTS exercises (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    muscle_group VARCHAR(255) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    sets INT,
+    reps VARCHAR(255)
+);
+
+-- Food Entries Table
+CREATE TABLE IF NOT EXISTS food_entries (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
-    meal VARCHAR(255) NOT NULL,
+    food_item VARCHAR(255) NOT NULL,
     calories INT NOT NULL,
-    date DATE NOT NULL,
+    entry_date DATE NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS progress (
+-- Water Logs Table
+CREATE TABLE IF NOT EXISTS water_logs (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
-    weight DECIMAL(5,2) NOT NULL,
-    date DATE NOT NULL,
+    amount DOUBLE NOT NULL,
+    log_date DATE NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS chatbot_logs (
+-- Chat Logs Table
+CREATE TABLE IF NOT EXISTS chat_logs (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
-    message TEXT NOT NULL,
-    response TEXT NOT NULL,
+    query TEXT NOT NULL,
+    reply TEXT NOT NULL,
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
-
--- Insert a default admin user (password is 'admin123' hashed with bcrypt)
--- Using a pre-generated bcrypt hash for 'admin123' (work factor 12)
-INSERT IGNORE INTO users (name, email, password, role) VALUES 
-('Admin', 'admin@gym.com', '$2b$12$NqL./4N1T.qL2zUoVfI//eVwz0i3.7Ff/B4B6Q7R5iG5tI5oWjM8K', 'admin');

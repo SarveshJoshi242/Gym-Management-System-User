@@ -56,11 +56,11 @@ public class ApiController {
     @Autowired
     private WaterLogRepository waterLogRepository;
 
-    private static final String DEFAULT_GEMINI_API_KEY = "AIzaSyBAIlJ79de7sZP7xYhWW8rqipx3P6HfpDg";
+    @org.springframework.beans.factory.annotation.Value("${gemini.api.key}")
+    private String geminiApiKey;
     
     private String getApiKey() {
-        String envKey = System.getenv("GEMINI_API_KEY");
-        return (envKey != null && !envKey.isEmpty()) ? envKey : DEFAULT_GEMINI_API_KEY;
+        return geminiApiKey;
     }
     
     private Map<String, Object> successResponse(Object data) {
