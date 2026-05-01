@@ -946,13 +946,46 @@ body   {
   font-weight: 700;
   border-bottom: 1px solid var(--border);
 }
+.rec-card {
+  /* Ensure it has relative positioning for the fade overlay */
+  position: relative;
+}
+.rec-card::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 50px;
+  background: linear-gradient(to top, var(--card) 10%, transparent 100%);
+  pointer-events: none;
+  border-bottom-left-radius: var(--radius);
+  border-bottom-right-radius: var(--radius);
+}
 .rec-body {
   padding: 20px;
+  padding-bottom: 40px; /* Extra padding so text clears the fade when fully scrolled */
   font-size: 0.85rem;
   font-family: inherit;
   color: var(--text-2);
   white-space: normal;
   line-height: 1.85;
+  height: 500px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+}
+.rec-body::-webkit-scrollbar {
+  width: 6px;
+}
+.rec-body::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 8px;
+}
+.rec-body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+}
+.rec-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
 }
 .rec-body p { margin-bottom: 12px; margin-top: 0; }
 .rec-body p:last-child { margin-bottom: 0; }

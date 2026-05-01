@@ -273,7 +273,12 @@
       <h2 class="panel-title">💪 Muscle-Wise Exercises</h2>
       <div class="muscle-grid" id="muscle-grid"></div>
       <div id="exercise-wrap" class="exercise-wrap hidden">
-        <h3 id="exercise-title" class="exercise-title"></h3>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <h3 id="exercise-title" class="exercise-title" style="margin-bottom: 0;"></h3>
+          <button id="exchange-btn" class="btn-outline" style="padding: 6px 12px; font-size: 0.8rem; display: flex; align-items: center; gap: 6px;" onclick="exchangeExercises()">
+            🔄 <span id="exchange-btn-text">Generate New</span>
+          </button>
+        </div>
         <div id="exercise-list" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px;">
         </div>
       </div>
@@ -325,11 +330,11 @@
       <div class="rec-grid">
         <div class="rec-card">
           <div class="rec-header">🏋 Workout Plan</div>
-          <pre id="rec-workout" class="rec-body">Loading…</pre>
+          <div id="rec-workout" class="rec-body">Loading…</div>
         </div>
         <div class="rec-card">
           <div class="rec-header">🥗 Diet Tips</div>
-          <pre id="rec-diet" class="rec-body">Loading…</pre>
+          <div id="rec-diet" class="rec-body">Loading…</div>
         </div>
       </div>
     </section>

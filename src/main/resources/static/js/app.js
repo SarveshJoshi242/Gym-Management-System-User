@@ -10,6 +10,7 @@ const completedExercises = new Set();
 let currentMuscleExercises = [];
 let currentCalendarDate = new Date();
 let completedWorkoutDates = new Map();
+let currentMuscleGroup = null;
 
 // ══════════════════════════════════════════════════════════════
 // AUTH
@@ -319,6 +320,7 @@ async function loadExercises(muscle) {
     b.classList.toggle('chosen', b.dataset.muscle === muscle));
 
   try {
+    currentMuscleGroup = muscle;
     const res = await get(`/exercises/${muscle}`);
     const wrap = document.getElementById('exercise-wrap');
     if (!res.success || !res.data || !res.data.length) {
@@ -355,6 +357,39 @@ async function loadExercises(muscle) {
   } catch (err) {
     console.error('[Exercises Error]', err);
     showToast('Something went wrong. Please try again.');
+  }
+}
+
+async function exchangeExercises() {
+  if (!currentMuscleGroup) return;
+  const btn = document.getElementById('exchange-btn');
+  const btnText = document.getElementById('exchange-btn-text');
+  
+  // Save original text and state
+  const originalText = btnText.textContent;
+  btn.disabled = true;
+  btnText.textContent = "Loading...";
+  btn.style.opacity = '0.6';
+  btn.style.cursor = 'not-allowed';
+  
+  try {
+    const res = await fetch(`${API}/exercises/${currentMuscleGroup}/exchange`, { method: 'POST' });
+    const json = await res.json();
+    if (json.success) {
+      showToast('New exercises generated successfully!');
+      // Re-render the newly updated exercises
+      await loadExercises(currentMuscleGroup);
+    } else {
+      showToast(json.message || 'Failed to exchange exercises.');
+    }
+  } catch (err) {
+    console.error('[Exchange Error]', err);
+    showToast('Something went wrong exchanging exercises.');
+  } finally {
+    btn.disabled = false;
+    btnText.textContent = originalText;
+    btn.style.opacity = '1';
+    btn.style.cursor = 'pointer';
   }
 }
 
@@ -403,7 +438,11 @@ async function loadGoals() {
       if (historyRes.success) {
         completedWorkoutDates.clear();
         historyRes.data.forEach(g => {
-          completedWorkoutDates.set(g.goalDate, g);
+          let dKey = g.goalDate;
+          if (Array.isArray(dKey)) {
+            dKey = `${dKey[0]}-${String(dKey[1]).padStart(2, '0')}-${String(dKey[2]).padStart(2, '0')}`;
+          }
+          completedWorkoutDates.set(dKey, g);
         });
       }
     } catch (err) { console.error('[History Error]', err); }
@@ -478,7 +517,8 @@ function renderCalendar() {
           statsDiv.innerHTML += `<div class="cal-stat kcal"><span class="stat-icon">🔥</span><span>${goalData.caloriesConsumed}</span></div>`;
         }
         if (goalData.waterConsumed > 0) {
-          statsDiv.innerHTML += `<div class="cal-stat water"><span class="stat-icon">💧</span><span>${goalData.waterConsumed.toFixed(1)}L</span></div>`;
+          const waterVal = Number(goalData.waterConsumed) || 0;
+          statsDiv.innerHTML += `<div class="cal-stat water"><span class="stat-icon">💧</span><span>${waterVal.toFixed(1)}L</span></div>`;
         }
         cell.appendChild(statsDiv);
       }

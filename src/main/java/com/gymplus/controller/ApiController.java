@@ -29,6 +29,10 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.Optional;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.core.type.TypeReference;
+
 @RestController
 @RequestMapping("/api")
 @CrossOrigin(origins = "*") // Since it's all static files, this helps if port differs, though it's served on 8080
@@ -52,7 +56,12 @@ public class ApiController {
     @Autowired
     private WaterLogRepository waterLogRepository;
 
-    private static final String GEMINI_API_KEY = "AIzaSyAp-BquqDBSRfx27pupORkuLjTquYxuPm0";
+    private static final String DEFAULT_GEMINI_API_KEY = "AIzaSyBAIlJ79de7sZP7xYhWW8rqipx3P6HfpDg";
+    
+    private String getApiKey() {
+        String envKey = System.getenv("GEMINI_API_KEY");
+        return (envKey != null && !envKey.isEmpty()) ? envKey : DEFAULT_GEMINI_API_KEY;
+    }
     
     private Map<String, Object> successResponse(Object data) {
         Map<String, Object> res = new HashMap<>();
@@ -128,9 +137,19 @@ public class ApiController {
             user.setWorkoutPlan(map.getOrDefault("workoutPlan", "Error generating plan."));
             user.setDietTips(map.getOrDefault("dietTips", "Error generating tips."));
         } catch (Exception e) {
-            System.err.println("JSON parse error: " + e.getMessage() + " | Reply: " + jsonReply);
-            user.setWorkoutPlan("Failed to generate workout plan. Please try again.");
-            user.setDietTips("Failed to generate diet tips. Please try again.");
+            System.err.println("JSON parse error or API failure: " + e.getMessage() + " | Reply: " + jsonReply);
+            
+            String goal = user.getGoal() != null ? user.getGoal() : "maintenance";
+            if ("fat_loss".equals(goal)) {
+                user.setWorkoutPlan("### Day 1: Full Body HIIT\n- Jump rope (5 mins)\n- Burpees (3x15)\n- Mountain Climbers (3x30s)\n\n### Day 2: Cardio\n- 30 mins brisk walk or jog\n\n### Day 3: Core & Cardio\n- Bicycle Crunches (3x20)\n- High Knees (3x30s)\n- Plank (3x60s)");
+                user.setDietTips("- **Caloric Deficit:** Consume fewer calories than you burn.\n- **High Protein:** Keep protein intake high to preserve muscle.\n- **Hydration:** Drink at least 3 liters of water daily.");
+            } else if ("weight_gain".equals(goal)) {
+                user.setWorkoutPlan("### Day 1: Heavy Push\n- Bench Press (4x6)\n- Overhead Press (3x8)\n- Dips (3x10)\n\n### Day 2: Heavy Pull\n- Deadlifts (3x5)\n- Barbell Rows (4x8)\n- Pull-ups (3xMax)\n\n### Day 3: Heavy Legs\n- Squats (4x6)\n- Leg Press (3x10)\n- Calf Raises (4x15)");
+                user.setDietTips("- **Caloric Surplus:** Eat more calories than you burn.\n- **Carb Heavy:** Consume complex carbs for energy.\n- **Frequent Meals:** Eat 4-5 times a day to hit your calorie goals.");
+            } else {
+                user.setWorkoutPlan("### Day 1: Upper Body\n- Push-ups (3x15)\n- Dumbbell Rows (3x12)\n- Shoulder Press (3x12)\n\n### Day 2: Active Recovery\n- Yoga or stretching for 20 mins\n\n### Day 3: Lower Body & Core\n- Bodyweight Squats (3x20)\n- Lunges (3x15 per leg)\n- Plank (3x60s)");
+                user.setDietTips("- **Balanced Macros:** Aim for an even split of carbs, protein, and fats.\n- **Consistency:** Focus on sustainable eating habits.\n- **Micronutrients:** Eat a variety of colorful vegetables daily.");
+            }
         }
     }
 
@@ -139,7 +158,16 @@ public class ApiController {
         data.put("user", user);
         data.put("goal", getOrCreateDailyGoal(user));
         
+        boolean needsRegeneration = false;
         if (user.getWorkoutPlan() == null || user.getDietTips() == null) {
+            needsRegeneration = true;
+        } else if (user.getWorkoutPlan().contains("Failed") || user.getWorkoutPlan().contains("Error")) {
+            needsRegeneration = true;
+        } else if (user.getDietTips().contains("Failed") || user.getDietTips().contains("Error")) {
+            needsRegeneration = true;
+        }
+
+        if (needsRegeneration) {
             generateUserRecommendations(user);
             userRepository.save(user);
         }
@@ -211,6 +239,44 @@ public class ApiController {
     public ResponseEntity<?> getExercises(@PathVariable String muscle) {
         List<Exercise> exercises = exerciseRepository.findByMuscleGroupIgnoreCase(muscle);
         return ResponseEntity.ok(successResponse(exercises));
+    }
+
+    @PostMapping("/exercises/{muscle}/exchange")
+    public ResponseEntity<?> exchangeExercises(@PathVariable String muscle) {
+        String prompt = "Return a JSON array of exactly 5 unique exercises for the muscle group: " + muscle + 
+                        ". The JSON must exactly match this format: [{\"name\": \"Incline DB Press\", \"sets\": 3, \"reps\": \"10-12\"}] " +
+                        "Do not include any other text, markdown, or backticks. Return raw JSON array only.";
+        String responseText = callGeminiApi(prompt);
+        if (responseText == null || responseText.isEmpty()) {
+            return ResponseEntity.ok(errorResponse("Failed to connect to IronMind AI."));
+        }
+        
+        int start = responseText.indexOf('[');
+        int end = responseText.lastIndexOf(']');
+        if (start != -1 && end != -1 && end >= start) {
+            responseText = responseText.substring(start, end + 1);
+        } else {
+            return ResponseEntity.ok(errorResponse("AI did not return a valid JSON array format."));
+        }
+        
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            List<Exercise> newExercises = mapper.readValue(responseText, new TypeReference<List<Exercise>>(){});
+            if (newExercises != null && !newExercises.isEmpty()) {
+                for (Exercise ex : newExercises) {
+                    ex.setMuscleGroup(muscle);
+                }
+                List<Exercise> oldExercises = exerciseRepository.findByMuscleGroupIgnoreCase(muscle);
+                exerciseRepository.deleteAll(oldExercises);
+                List<Exercise> savedExercises = exerciseRepository.saveAll(newExercises);
+                return ResponseEntity.ok(successResponse(savedExercises));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.err.println("FAILED TO PARSE: " + responseText);
+            return ResponseEntity.ok(errorResponse("Failed to parse AI response."));
+        }
+        return ResponseEntity.ok(errorResponse("No exercises generated."));
     }
 
     @GetMapping("/goals/{id}")
@@ -364,7 +430,7 @@ public class ApiController {
             factory.setConnectTimeout(8000);
             factory.setReadTimeout(30000);
             RestTemplate restTemplate = new RestTemplate(factory);
-            String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=" + GEMINI_API_KEY;
+            String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + getApiKey();
             
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
