@@ -509,7 +509,7 @@ function renderCalendar() {
         cell.classList.add('completed');
       }
       
-      if (goalData.caloriesConsumed > 0 || goalData.waterConsumed > 0) {
+      if (goalData.caloriesConsumed > 0 || goalData.waterConsumed > 0 || (goalData.workoutCompleted && goalData.workoutType)) {
         const statsDiv = document.createElement('div');
         statsDiv.className = 'cal-stats';
         
@@ -519,6 +519,10 @@ function renderCalendar() {
         if (goalData.waterConsumed > 0) {
           const waterVal = Number(goalData.waterConsumed) || 0;
           statsDiv.innerHTML += `<div class="cal-stat water"><span class="stat-icon">💧</span><span>${waterVal.toFixed(1)}L</span></div>`;
+        }
+        if (goalData.workoutCompleted && goalData.workoutType) {
+          const wType = goalData.workoutType.charAt(0).toUpperCase() + goalData.workoutType.slice(1);
+          statsDiv.innerHTML += `<div class="cal-stat workout"><span class="stat-icon">🏋️</span><span>${wType}</span></div>`;
         }
         cell.appendChild(statsDiv);
       }
@@ -531,7 +535,8 @@ function renderCalendar() {
 async function markWorkoutDone() {
   if (!currentUser) return;
   try {
-    const res = await post(`/goals/${currentUser.id}/complete`, {});
+    const payload = currentMuscleGroup ? { workoutType: currentMuscleGroup } : {};
+    const res = await post(`/goals/${currentUser.id}/complete`, payload);
     if (res.success && res.data) {
       setWorkoutUI(true);
       showToast('Workout marked as completed! 🎉');
@@ -549,6 +554,9 @@ async function markWorkoutDone() {
       const todayStr = new Date().toISOString().split('T')[0];
       let todayGoal = completedWorkoutDates.get(todayStr) || { workoutCompleted: false, caloriesConsumed: 0, waterConsumed: 0 };
       todayGoal.workoutCompleted = true;
+      if (currentMuscleGroup) {
+          todayGoal.workoutType = currentMuscleGroup;
+      }
       completedWorkoutDates.set(todayStr, todayGoal);
       renderCalendar();
     } else {

@@ -27,6 +27,9 @@ public class DailyGoal {
     @Column(name = "workout_completed")
     private Boolean workoutCompleted = false;
 
+    @Column(name = "workout_type")
+    private String workoutType;
+
     @Column(name = "goal_date", nullable = false)
     private LocalDate goalDate = LocalDate.now();
 }

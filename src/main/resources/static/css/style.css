@@ -726,6 +726,7 @@ body   {
 }
 .cal-stat.kcal { border-left: 2px solid #ef4444; }
 .cal-stat.water { border-left: 2px solid #3b82f6; }
+.cal-stat.workout { border-left: 2px solid #10b981; }
 .cal-stat .stat-icon {
   font-size: 0.8rem;
 }

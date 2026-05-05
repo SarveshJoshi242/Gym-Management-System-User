@@ -296,12 +296,15 @@ public class ApiController {
     }
 
     @PostMapping("/goals/{id}/complete")
-    public ResponseEntity<?> completeWorkout(@PathVariable Integer id) {
+    public ResponseEntity<?> completeWorkout(@PathVariable Integer id, @RequestBody(required = false) Map<String, String> requestBody) {
         Optional<User> userOpt = userRepository.findById(id);
         if (userOpt.isPresent()) {
             User user = userOpt.get();
             DailyGoal goal = getOrCreateDailyGoal(user);
             goal.setWorkoutCompleted(true);
+            if (requestBody != null && requestBody.containsKey("workoutType")) {
+                goal.setWorkoutType(requestBody.get("workoutType"));
+            }
             dailyGoalRepository.save(goal);
             
             LocalDate today = LocalDate.now();
