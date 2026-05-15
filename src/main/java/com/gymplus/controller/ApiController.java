@@ -89,17 +89,29 @@ public class ApiController {
             goal.setUserId(user.getId());
             goal.setGoalDate(today);
             goal.setWorkoutCompleted(false);
-            
-            if ("fat_loss".equals(user.getGoal())) {
-                goal.setCalories(1800);
-                goal.setWaterIntake(3.5);
-            } else if ("weight_gain".equals(user.getGoal())) {
-                goal.setCalories(3200);
-                goal.setWaterIntake(3.0);
-            } else {
-                goal.setCalories(2400);
-                goal.setWaterIntake(2.5);
-            }
+        }
+        
+        // Always recalculate calorie & water targets from current user data
+        // Mifflin-St Jeor equation: BMR = 10 × weight(kg) + 6.25 × height(cm) - 5 × age + 5
+        double weightKg = user.getWeight() != null ? user.getWeight() : 70.0;
+        double heightCm = user.getHeight() != null ? user.getHeight() * 100.0 : 170.0; // stored in meters, convert to cm
+        int age = user.getAge() != null ? user.getAge() : 25;
+        
+        double bmr = (10.0 * weightKg) + (6.25 * heightCm) - (5.0 * age) + 5;
+        double tdee = bmr * 1.55; // moderate activity multiplier
+        
+        // Water intake: ~33ml per kg of body weight, adjusted per goal
+        double baseWater = Math.round((weightKg * 0.033) * 10.0) / 10.0;
+        
+        if ("fat_loss".equals(user.getGoal())) {
+            goal.setCalories((int) Math.round(tdee - 500)); // caloric deficit
+            goal.setWaterIntake(Math.round((baseWater + 0.5) * 10.0) / 10.0); // extra hydration for fat loss
+        } else if ("weight_gain".equals(user.getGoal())) {
+            goal.setCalories((int) Math.round(tdee + 500)); // caloric surplus
+            goal.setWaterIntake(baseWater);
+        } else {
+            goal.setCalories((int) Math.round(tdee)); // maintenance
+            goal.setWaterIntake(baseWater);
         }
         
         List<FoodEntry> foods = foodEntryRepository.findByUserIdAndEntryDate(user.getId(), today);
@@ -427,37 +439,56 @@ public class ApiController {
         return ResponseEntity.ok(successResponse(data));
     }
     
+    private static final String[] GEMINI_MODELS = {"gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.0-flash-lite"};
+
     private String callGeminiApi(String prompt) {
-        try {
-            SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-            factory.setConnectTimeout(8000);
-            factory.setReadTimeout(30000);
-            RestTemplate restTemplate = new RestTemplate(factory);
-            String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + getApiKey();
-            
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            
-            String requestBody = "{\"contents\":[{\"parts\":[{\"text\":\"" + prompt.replace("\"", "\\\"").replace("\n", " ") + "\"}]}]}";
-            
-            HttpEntity<String> entity = new HttpEntity<>(requestBody, headers);
-            ResponseEntity<Map> response = restTemplate.postForEntity(url, entity, Map.class);
-            
-            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                Map<String, Object> body = response.getBody();
-                List<Map<String, Object>> candidates = (List<Map<String, Object>>) body.get("candidates");
-                if (candidates != null && !candidates.isEmpty()) {
-                    Map<String, Object> content = (Map<String, Object>) candidates.get(0).get("content");
-                    List<Map<String, Object>> parts = (List<Map<String, Object>>) content.get("parts");
-                    if (parts != null && !parts.isEmpty()) {
-                        return (String) parts.get(0).get("text");
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(8000);
+        factory.setReadTimeout(45000);
+        RestTemplate restTemplate = new RestTemplate(factory);
+        
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        
+        String requestBody = "{\"contents\":[{\"parts\":[{\"text\":\"" + prompt.replace("\"", "\\\"").replace("\n", " ") + "\"}]}]}";
+        HttpEntity<String> entity = new HttpEntity<>(requestBody, headers);
+        
+        for (String model : GEMINI_MODELS) {
+            // Each model gets up to 2 attempts (retry once on 503/transient errors)
+            for (int attempt = 0; attempt < 2; attempt++) {
+                try {
+                    String url = "https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent?key=" + getApiKey();
+                    System.out.println("[Gemini] Trying " + model + " (attempt " + (attempt + 1) + ")");
+                    ResponseEntity<Map> response = restTemplate.postForEntity(url, entity, Map.class);
+                    
+                    if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                        Map<String, Object> body = response.getBody();
+                        List<Map<String, Object>> candidates = (List<Map<String, Object>>) body.get("candidates");
+                        if (candidates != null && !candidates.isEmpty()) {
+                            Map<String, Object> content = (Map<String, Object>) candidates.get(0).get("content");
+                            List<Map<String, Object>> parts = (List<Map<String, Object>>) content.get("parts");
+                            if (parts != null && !parts.isEmpty()) {
+                                System.out.println("[Gemini] Success with " + model);
+                                return (String) parts.get(0).get("text");
+                            }
+                        }
                     }
+                    break; // Got a 2xx but no content — skip to next model
+                } catch (Exception e) {
+                    String msg = e.getMessage() != null ? e.getMessage() : "";
+                    System.err.println("[Gemini] " + model + " failed: " + msg.substring(0, Math.min(80, msg.length())));
+                    
+                    // Retry on 503 (model overloaded) with a short 5s wait
+                    if (msg.contains("503") && attempt == 0) {
+                        System.out.println("[Gemini] Model overloaded, retrying in 5s...");
+                        try { Thread.sleep(5000); } catch (InterruptedException ignored) {}
+                        continue;
+                    }
+                    break; // 429 or other error — skip to next model
                 }
             }
-            return "I'm having trouble connecting to my fitness knowledge base right now. Please try again later.";
-        } catch (Exception e) {
-            System.err.println("Gemini API Error: " + e.getMessage());
-            return "I'm having trouble connecting to my fitness knowledge base right now. Please try again later.";
         }
+        
+        return "I'm having trouble connecting to my fitness knowledge base right now. Please try again later.";
     }
 }
