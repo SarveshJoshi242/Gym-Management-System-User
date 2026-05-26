@@ -4,7 +4,7 @@
 //  Example: https://gymplus-api.onrender.com
 // ═══════════════════════════════════════════════════════════════
 
-const API_BASE_URL = 'https://YOUR-RENDER-APP-NAME.onrender.com';
+const API_BASE_URL = 'https://gym-management-system-user.onrender.com';
 
 // ── Build the API path used by app.js ────────────────────────
 const API = API_BASE_URL + '/api';
