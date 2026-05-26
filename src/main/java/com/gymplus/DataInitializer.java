@@ -13,7 +13,14 @@ public class DataInitializer {
     @Bean
     public CommandLineRunner initData(ExerciseRepository exerciseRepository) {
         return args -> {
-            exerciseRepository.deleteAll();
+            // Only seed default exercises if the table is empty.
+            // This prevents overwriting AI-generated exercises on every restart.
+            if (exerciseRepository.count() > 0) {
+                System.out.println("[DataInitializer] Exercises table already has data — skipping seed.");
+                return;
+            }
+
+            System.out.println("[DataInitializer] Exercises table is empty — seeding default exercises...");
 
             // Chest
             Exercise e1 = new Exercise(); e1.setMuscleGroup("chest"); e1.setName("Bench Press"); e1.setSets(4); e1.setReps("8-10");

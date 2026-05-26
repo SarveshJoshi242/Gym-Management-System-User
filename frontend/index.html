@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GymPlus Software — Fitness Management System</title>
+  <meta name="description"
+    content="GymPlus Software — AI-powered gym management with BMI tracking, workout plans, and personalised recommendations." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" />
+  <link rel="stylesheet" href="css/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+
+<body>
+
+  <!-- ════════════════════════════════════
+     AUTH SCREEN
+     ════════════════════════════════════ -->
+  <div id="auth-screen" class="screen active fade-in">
+
+    <div class="auth-wrapper">
+      <div class="auth-card slide-up">
+
+        <!-- Brand -->
+        <div class="brand">
+          <div class="brand-icon">G<span class="brand-plus">+</span></div>
+          <div class="brand-text">
+            <span class="brand-name">GymPlus</span>
+            <span class="brand-suffix">Software</span>
+          </div>
+        </div>
+        <p class="brand-tagline">AI-Powered Fitness Management System</p>
+
+        <!-- Tabs -->
+        <div class="auth-tabs" role="tablist">
+          <button id="tab-login" class="tab-btn active" role="tab" onclick="switchTab('login')">Login</button>
+          <button id="tab-register" class="tab-btn" role="tab" onclick="switchTab('register')">Register</button>
+        </div>
+
+        <!-- ── LOGIN FORM ── -->
+        <form id="login-form" class="auth-form" onsubmit="handleLogin(event)" novalidate>
+          <div class="form-group">
+            <label for="login-name">Username</label>
+            <input id="login-name" type="text" placeholder="Enter your name" autocomplete="username" required />
+          </div>
+          <div class="form-group">
+            <label for="login-pass">Password</label>
+            <input id="login-pass" type="password" placeholder="Enter your password" autocomplete="current-password"
+              required />
+          </div>
+          <div id="login-error" class="form-error hidden" role="alert"></div>
+          <button type="submit" class="btn-primary" id="login-btn">
+            <span class="btn-text">Login</span>
+            <span class="btn-loader hidden"><span class="spinner"></span> Loading…</span>
+          </button>
+        </form>
+
+        <!-- ── REGISTER FORM ── -->
+        <form id="register-form" class="auth-form hidden" onsubmit="handleRegister(event)" novalidate>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="reg-name">Full Name</label>
+              <input id="reg-name" type="text" placeholder="Your full name" required />
+            </div>
+            <div class="form-group">
+              <label for="reg-age">Age</label>
+              <input id="reg-age" type="number" placeholder="e.g. 22" min="10" max="99" required />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="reg-height">Height <span class="label-hint">(metres)</span></label>
+              <input id="reg-height" type="number" step="0.01" placeholder="e.g. 1.75" required />
+            </div>
+            <div class="form-group">
+              <label for="reg-weight">Weight <span class="label-hint">(kg)</span></label>
+              <input id="reg-weight" type="number" step="0.1" placeholder="e.g. 70" required />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="reg-goal">Fitness Goal</label>
+            <select id="reg-goal">
+              <option value="fat_loss">🔥 Fat Loss</option>
+              <option value="weight_gain">💪 Weight Gain</option>
+              <option value="maintenance" selected>⚖️ Maintenance</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="reg-pass">Password</label>
+            <input id="reg-pass" type="password" placeholder="Create a password" required />
+          </div>
+          <div id="register-error" class="form-error hidden" role="alert"></div>
+          <button type="submit" class="btn-primary" id="register-btn">
+            <span class="btn-text">Create Account</span>
+            <span class="btn-loader hidden"><span class="spinner"></span> Loading…</span>
+          </button>
+        </form>
+
+        <!-- BMI Quick Calc -->
+        <div class="bmi-section">
+          <div class="bmi-section-label">
+            <span class="divider-line"></span>
+            <span>Quick BMI Check</span>
+            <span class="divider-line"></span>
+          </div>
+          <div class="bmi-row">
+            <input id="bmi-h" type="number" step="0.01" placeholder="Height (m)" />
+            <input id="bmi-w" type="number" step="0.1" placeholder="Weight (kg)" />
+            <button class="btn-outline" onclick="quickBMI()">Check</button>
+          </div>
+          <div id="bmi-result" class="bmi-result hidden"></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════
+     DASHBOARD SCREEN
+     ════════════════════════════════════ -->
+  <div id="dashboard-screen" class="screen hidden">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-icon sm">G<span class="brand-plus">+</span></div>
+        <div>
+          <div class="sidebar-brand-name">GymPlus</div>
+          <div class="sidebar-brand-sub">Software</div>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav" role="navigation">
+        <button class="nav-item active" data-panel="overview" onclick="showPanel('overview')">
+          <span class="nav-icon">📊</span><span>Overview</span>
+        </button>
+        <button class="nav-item" data-panel="exercises" onclick="showPanel('exercises')">
+          <span class="nav-icon">💪</span><span>Exercises</span>
+        </button>
+        <button class="nav-item" data-panel="goals" onclick="showPanel('goals')">
+          <span class="nav-icon">🎯</span><span>Daily Goals</span>
+        </button>
+        <button class="nav-item" data-panel="recommend" onclick="showPanel('recommend')">
+          <span class="nav-icon">🧠</span><span>Recommend</span>
+        </button>
+        <button class="nav-item" data-panel="assistant" onclick="showPanel('assistant')">
+          <span class="nav-icon">🤖</span><span>IronMind AI</span>
+        </button>
+      </nav>
+
+      <button class="logout-btn" onclick="logout()">
+        <span>←</span><span>Logout</span>
+      </button>
+    </aside>
+
+    <!-- Main content -->
+    <main class="main-content">
+
+      <header class="topbar">
+        <div class="topbar-left">
+          <h1 id="welcome-msg" class="topbar-title">Welcome!</h1>
+          <p class="topbar-sub">Your fitness summary for today</p>
+        </div>
+        <div class="topbar-right">
+          <div id="streak-badge" class="hidden"
+            style="background: rgba(249, 115, 22, 0.1); border: 1px solid rgba(249, 115, 22, 0.3); color: #fdba74; padding: 6px 14px; border-radius: 20px; font-weight: 800; font-size: 0.85rem; letter-spacing: 0.05em; display: flex; align-items: center; gap: 6px; box-shadow: 0 0 15px rgba(249, 115, 22, 0.15);">
+            🔥 <span id="streak-count">0</span> Day Streak
+          </div>
+          <button class="btn-edit-profile" onclick="openEditModal()" title="Edit Profile">
+            ✏️ Edit Profile
+          </button>
+          <span id="user-goal-badge" class="goal-badge">—</span>
+        </div>
+      </header>
+
+      <!-- ── Overview ── -->
+      <section id="panel-overview" class="panel active">
+        <div class="cards-grid">
+
+          <div class="card">
+            <div class="card-header"><span>⚖️</span><span>BMI Index</span></div>
+            <div class="bmi-display">
+              <span id="dash-bmi" class="bmi-number">—</span>
+              <span id="dash-bmi-cat" class="bmi-cat">—</span>
+            </div>
+            <div class="bmi-bar-wrap">
+              <div class="bmi-bar">
+                <div id="bmi-bar-marker" class="bmi-marker"></div>
+              </div>
+              <div class="bmi-bar-labels">
+                <span>Underweight</span><span>Normal</span><span>Overweight</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><span>📋</span><span>My Stats</span></div>
+            <div class="stats-list">
+              <div class="stat-row"><span>Height</span><strong id="dash-height">—</strong></div>
+              <div class="stat-row"><span>Weight</span><strong id="dash-weight">—</strong></div>
+              <div class="stat-row"><span>Age</span> <strong id="dash-age">—</strong></div>
+              <div class="stat-row"><span>Goal</span> <strong id="dash-goal">—</strong></div>
+            </div>
+          </div>
+
+          <div class="card center-card">
+            <div class="card-header"><span>🔥</span><span>Calorie Target</span></div>
+            <div class="big-num red" id="dash-calories">—</div>
+            <div class="big-unit">kcal / day</div>
+          </div>
+
+          <div class="card center-card">
+            <div class="card-header"><span>💧</span><span>Water Intake</span></div>
+            <div class="big-num blue" id="dash-water">—</div>
+            <div class="big-unit">litres / day</div>
+          </div>
+
+        </div>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 24px; margin-top: 24px; align-items: stretch;">
+
+          <!-- Chart Column -->
+          <div class="card" style="flex: 1; min-width: 300px; display: flex; flex-direction: column; padding: 24px;">
+            <div class="card-header" style="margin-bottom: 16px; justify-content: center;"><span>📊</span><span>Activity
+                Rings</span></div>
+            <div
+              style="position: relative; flex: 1; min-height: 250px; display: flex; align-items: center; justify-content: center;">
+              <canvas id="goalChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Right Column (Workout + Log) -->
+          <div style="flex: 2; min-width: 340px; display: flex; flex-direction: column; gap: 24px;">
+
+            <div class="workout-bar" style="margin-top: 0; padding: 24px;">
+              <span id="workout-status-text">Loading workout status…</span>
+              <button id="complete-btn" class="btn-success" onclick="markWorkoutDone()"
+                style="box-shadow: 0 4px 12px rgba(16,185,129,0.3);">Mark Completed ✓</button>
+            </div>
+
+            <div class="card" style="padding: 28px; flex: 1;">
+              <div class="card-header" style="margin-bottom: 24px; font-size: 0.8rem;"><span>📝</span><span>Log Your
+                  Intake</span></div>
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px;">
+
+                <!-- Food Log -->
+                <div
+                  style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: var(--radius-sm); padding: 20px;">
+                  <div
+                    style="font-size: 0.75rem; font-weight: 700; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 1.1rem;">🍎</span> Log Food
+                  </div>
+                  <div style="display: flex; flex-direction: column; gap: 12px;">
+                    <input type="text" id="food-item-input" placeholder="Food item (e.g., Chicken Breast)"
+                      style="width: 100%; padding: 12px 16px; border-radius: var(--radius-xs); border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: white; outline: none; transition: all var(--dur) var(--ease);"
+                      onfocus="this.style.borderColor='var(--red)'; this.style.background='rgba(255,255,255,0.08)';"
+                      onblur="this.style.borderColor='rgba(255,255,255,0.1)'; this.style.background='rgba(255,255,255,0.05)';" />
+                    <input type="number" id="food-cal-input" placeholder="Calories (kcal)"
+                      style="width: 100%; padding: 12px 16px; border-radius: var(--radius-xs); border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: white; outline: none; transition: all var(--dur) var(--ease);"
+                      onfocus="this.style.borderColor='var(--red)'; this.style.background='rgba(255,255,255,0.08)';"
+                      onblur="this.style.borderColor='rgba(255,255,255,0.1)'; this.style.background='rgba(255,255,255,0.05)';" />
+                    <button class="btn-primary" onclick="logFood()"
+                      style="margin-top: 4px; box-shadow: 0 4px 12px rgba(255,51,51,0.2);">+ Add Food</button>
+                  </div>
+                </div>
+
+                <!-- Water Log -->
+                <div
+                  style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: var(--radius-sm); padding: 20px;">
+                  <div
+                    style="font-size: 0.75rem; font-weight: 700; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 1.1rem;">💧</span> Log Water
+                  </div>
+                  <div style="display: flex; flex-direction: column; gap: 12px;">
+                    <input type="number" id="water-amount-input" step="0.1" placeholder="Amount in Litres (e.g., 0.5)"
+                      style="width: 100%; padding: 12px 16px; border-radius: var(--radius-xs); border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: white; outline: none; transition: all var(--dur) var(--ease);"
+                      onfocus="this.style.borderColor='var(--blue)'; this.style.background='rgba(255,255,255,0.08)';"
+                      onblur="this.style.borderColor='rgba(255,255,255,0.1)'; this.style.background='rgba(255,255,255,0.05)';" />
+                    <button class="btn-primary" onclick="logWater()"
+                      style="margin-top: 4px; background: linear-gradient(135deg, var(--blue), #0284c7); box-shadow: 0 4px 12px rgba(14,165,233,0.2);">+
+                      Add Water</button>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Exercises ── -->
+      <section id="panel-exercises" class="panel hidden">
+        <h2 class="panel-title">💪 Muscle-Wise Exercises</h2>
+        <div class="muscle-grid" id="muscle-grid"></div>
+        <div id="exercise-wrap" class="exercise-wrap hidden">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3 id="exercise-title" class="exercise-title" style="margin-bottom: 0;"></h3>
+            <button id="exchange-btn" class="btn-outline"
+              style="padding: 6px 12px; font-size: 0.8rem; display: flex; align-items: center; gap: 6px;"
+              onclick="exchangeExercises()">
+              🔄 <span id="exchange-btn-text">Generate New</span>
+            </button>
+          </div>
+          <div id="exercise-list"
+            style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px;">
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Goals ── -->
+      <section id="panel-goals" class="panel hidden">
+        <h2 class="panel-title">🎯 Daily Goals</h2>
+        <div class="goals-grid">
+          <div class="goal-card">
+            <div class="gc-icon">🔥</div>
+            <div class="gc-label">Calorie Target</div>
+            <div id="gd-calories" class="gc-value red">—</div>
+            <div class="gc-unit">kcal / day</div>
+          </div>
+          <div class="goal-card">
+            <div class="gc-icon">💧</div>
+            <div class="gc-label">Water Intake</div>
+            <div id="gd-water" class="gc-value blue">—</div>
+            <div class="gc-unit">litres / day</div>
+          </div>
+          <div class="goal-card">
+            <div class="gc-icon">🏋</div>
+            <div class="gc-label">Workout</div>
+            <div id="gd-workout" class="gc-value">—</div>
+            <button id="gd-complete-btn" class="btn-success mt8" onclick="markWorkoutDone()">Mark Done</button>
+          </div>
+        </div>
+
+        <h2 class="panel-title" style="margin-top: 48px; margin-bottom: 24px;">📅 Workout Activity</h2>
+        <div class="calendar-wrapper">
+          <div class="calendar-header">
+            <button class="btn-outline" onclick="changeMonth(-1)">←</button>
+            <span id="calendar-month-year"
+              style="font-weight: 800; font-size: 1.2rem; letter-spacing: 0.05em; color: var(--text-1);">May 2026</span>
+            <button class="btn-outline" onclick="changeMonth(1)">→</button>
+          </div>
+          <div class="calendar-days-header">
+            <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+          </div>
+          <div class="calendar-grid" id="calendar-grid">
+            <!-- Rendered via JS -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Recommendations ── -->
+      <section id="panel-recommend" class="panel hidden">
+        <h2 class="panel-title">Your Recommendations</h2>
+        <div class="rec-grid">
+          <div class="rec-card">
+            <div class="rec-header">🏋 Workout Plan</div>
+            <div id="rec-workout" class="rec-body">Loading…</div>
+          </div>
+          <div class="rec-card">
+            <div class="rec-header">🥗 Diet Tips</div>
+            <div id="rec-diet" class="rec-body">Loading…</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── AI Assistant ── -->
+      <section id="panel-assistant" class="panel hidden">
+        <h2 class="panel-title">🤖 IronMind AI</h2>
+        <div class="chat-box">
+          <div id="chat-messages" class="chat-messages">
+            <div class="msg bot">
+              <span class="avatar">🤖</span>
+              <div class="bubble">
+                Hey! I'm IronMind AI, your personalized fitness assistant. Ask me anything!<br />
+                Try: <em>"exercises for chest"</em> or <em>"diet tips"</em>
+              </div>
+            </div>
+          </div>
+          <div class="chat-footer">
+            <div class="chat-input-row">
+              <input id="chat-input" type="text" placeholder="Ask me anything…"
+                onkeydown="if(event.key==='Enter') sendChat()" />
+              <button class="btn-primary send-btn" onclick="sendChat()">Send →</button>
+            </div>
+            <div class="chips">
+              <button class="chip" onclick="insertChip('exercises for chest')">Chest</button>
+              <button class="chip" onclick="insertChip('exercises for back')">Back</button>
+              <button class="chip" onclick="insertChip('exercises for legs')">Legs</button>
+              <button class="chip" onclick="insertChip('diet tips')">Diet</button>
+              <button class="chip" onclick="insertChip('show my workout plan')">Workout</button>
+              <button class="chip" onclick="insertChip('what is my bmi')">My BMI</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ════════════════════════════════════
+     EDIT PROFILE MODAL
+     ════════════════════════════════════ -->
+  <div id="edit-modal" class="modal-backdrop hidden" onclick="handleBackdropClick(event)">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+
+      <!-- Header -->
+      <div class="modal-header">
+        <h2 id="modal-title" class="modal-title">✏️ Edit Profile</h2>
+        <button class="modal-close" onclick="closeEditModal()" aria-label="Close">✕</button>
+      </div>
+
+      <!-- Body -->
+      <div class="modal-body">
+        <form id="edit-form" onsubmit="handleProfileUpdate(event)" novalidate>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="edit-name">Full Name</label>
+              <input id="edit-name" type="text" placeholder="Your name" required />
+            </div>
+            <div class="form-group">
+              <label for="edit-age">Age</label>
+              <input id="edit-age" type="number" placeholder="e.g. 22" min="1" max="120" required />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="edit-height">Height <span class="label-hint">(metres)</span></label>
+              <input id="edit-height" type="number" step="0.01" placeholder="e.g. 1.75" required />
+            </div>
+            <div class="form-group">
+              <label for="edit-weight">Weight <span class="label-hint">(kg)</span></label>
+              <input id="edit-weight" type="number" step="0.1" placeholder="e.g. 70" required />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="edit-goal">Fitness Goal</label>
+            <select id="edit-goal">
+              <option value="fat_loss">🔥 Fat Loss</option>
+              <option value="weight_gain">💪 Weight Gain</option>
+              <option value="maintenance">⚖️ Maintenance</option>
+            </select>
+          </div>
+
+          <!-- Live BMI preview -->
+          <div class="bmi-preview" id="bmi-preview">
+            <span class="bmi-preview-label">BMI Preview</span>
+            <span id="bmi-preview-val" class="bmi-preview-val">—</span>
+            <span id="bmi-preview-cat" class="bmi-preview-cat">—</span>
+          </div>
+
+          <div id="edit-error" class="form-error hidden" role="alert"></div>
+
+          <div class="modal-actions">
+            <button type="button" class="btn-outline" onclick="closeEditModal()">Cancel</button>
+            <button type="submit" class="btn-primary" id="edit-save-btn">
+              <span class="btn-text">Save Changes</span>
+              <span class="btn-loader hidden"><span class="spinner"></span> Saving…</span>
+            </button>
+          </div>
+        </form>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+  <script src="js/config.js"></script>
+  <script src="js/app.js"></script>
+</body>
+
+</html>

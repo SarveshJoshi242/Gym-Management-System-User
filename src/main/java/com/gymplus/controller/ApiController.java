@@ -35,7 +35,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 
 @RestController
 @RequestMapping("/api")
-@CrossOrigin(origins = "*") // Since it's all static files, this helps if port differs, though it's served on 8080
+@CrossOrigin(origins = "${cors.allowed.origin}")
 public class ApiController {
 
     @Autowired
@@ -61,6 +61,12 @@ public class ApiController {
     
     private String getApiKey() {
         return geminiApiKey;
+    }
+
+    // ── Health Check (used by Render to verify the app is alive) ──
+    @GetMapping("/health")
+    public ResponseEntity<?> health() {
+        return ResponseEntity.ok(Map.of("status", "UP"));
     }
     
     private Map<String, Object> successResponse(Object data) {
