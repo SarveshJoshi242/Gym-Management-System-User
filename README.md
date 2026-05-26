@@ -1,5 +1,8 @@
 # 💪 GymPlus Software
 
+[![Deployment Status: Working](https://img.shields.io/badge/Deployment_Status-Working-brightgreen?style=for-the-badge)](https://gym-management-system-user.vercel.app/)
+**Live Demo:** [https://gym-management-system-user.vercel.app/](https://gym-management-system-user.vercel.app/)
+
 GymPlus is a modern, AI-powered gym management dashboard built to track fitness goals, recommend personalized workouts, and maintain a seamless fitness journey. With features ranging from daily calorie tracking to dynamic LLM-generated exercise routines via Google Gemini, GymPlus provides an all-in-one smart interface for health enthusiasts.
 
 ---
