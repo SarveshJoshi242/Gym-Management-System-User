@@ -38,4 +38,3 @@ build/
 ### Others ###
 *.log
 .env
-src/main/resources/application.properties
