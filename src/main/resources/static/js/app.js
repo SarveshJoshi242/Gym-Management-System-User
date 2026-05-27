@@ -3,7 +3,8 @@
    API: http://localhost:8080
    ══════════════════════════════════════════════════════════════ */
 
-const API = 'http://localhost:8080/api';
+// NOTE: The 'API' constant is defined in config.js (loaded before this file).
+// To change the backend URL, edit config.js — not this file.
 let currentUser = null;
 let goalChartInstance = null;
 const completedExercises = new Set();
