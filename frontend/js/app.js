@@ -14,6 +14,22 @@ let completedWorkoutDates = new Map();
 let currentMuscleGroup = null;
 
 // ══════════════════════════════════════════════════════════════
+// JWT TOKEN MANAGEMENT
+// ══════════════════════════════════════════════════════════════
+
+function getToken() {
+  return localStorage.getItem('gymplus_token');
+}
+
+function setToken(token) {
+  localStorage.setItem('gymplus_token', token);
+}
+
+function removeToken() {
+  localStorage.removeItem('gymplus_token');
+}
+
+// ══════════════════════════════════════════════════════════════
 // AUTH
 // ══════════════════════════════════════════════════════════════
 
@@ -35,6 +51,7 @@ async function handleRegister(e) {
 
   const body = {
     name:     document.getElementById('reg-name')  .value.trim(),
+    email:    document.getElementById('reg-email') .value.trim().toLowerCase(),
     age:      +document.getElementById('reg-age')  .value,
     height:   +document.getElementById('reg-height').value,
     weight:   +document.getElementById('reg-weight').value,
@@ -43,17 +60,36 @@ async function handleRegister(e) {
   };
 
   // Client-side validation
-  if (!body.name)            return showError('register-error', 'Name is required.'),     setLoading('register-btn', false);
-  if (body.age <= 0)         return showError('register-error', 'Enter a valid age.'),    setLoading('register-btn', false);
-  if (body.height <= 0)      return showError('register-error', 'Enter valid height.'),   setLoading('register-btn', false);
-  if (body.weight <= 0)      return showError('register-error', 'Enter valid weight.'),   setLoading('register-btn', false);
-  if (!body.password)        return showError('register-error', 'Password is required.'), setLoading('register-btn', false);
+  if (!body.name || body.name.length < 3)
+    return showError('register-error', 'Name must be at least 3 characters.'), setLoading('register-btn', false);
+  if (!/^[A-Za-z ]+$/.test(body.name))
+    return showError('register-error', 'Name should contain only letters and spaces.'), setLoading('register-btn', false);
+  if (!body.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.email))
+    return showError('register-error', 'Please enter a valid email address.'), setLoading('register-btn', false);
+  if (body.age < 10 || body.age > 120)
+    return showError('register-error', 'Age must be between 10 and 120.'), setLoading('register-btn', false);
+  if (body.height < 0.5 || body.height > 3.0)
+    return showError('register-error', 'Height must be between 0.5 and 3.0 metres.'), setLoading('register-btn', false);
+  if (body.weight < 20 || body.weight > 400)
+    return showError('register-error', 'Weight must be between 20 and 400 kg.'), setLoading('register-btn', false);
+  if (!body.password || body.password.length < 6)
+    return showError('register-error', 'Password must be at least 6 characters.'), setLoading('register-btn', false);
 
   try {
     const res = await post('/register', body);
     if (!res.success) {
-      showError('register-error', res.message || 'Registration failed. Please try again.');
+      // Handle validation errors from backend
+      if (res.errors) {
+        const firstError = Object.values(res.errors)[0];
+        showError('register-error', firstError);
+      } else {
+        showError('register-error', res.message || 'Registration failed. Please try again.');
+      }
       return;
+    }
+    // Store JWT token
+    if (res.data.token) {
+      setToken(res.data.token);
     }
     currentUser = res.data.user;
     bootDashboard(res.data);
@@ -73,15 +109,25 @@ async function handleLogin(e) {
   setLoading('login-btn', true);
 
   const body = {
-    name:     document.getElementById('login-name').value.trim(),
+    email:    document.getElementById('login-email').value.trim().toLowerCase(),
     password: document.getElementById('login-pass').value,
   };
+
+  // Client-side validation
+  if (!body.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.email))
+    return showError('login-error', 'Please enter a valid email address.'), setLoading('login-btn', false);
+  if (!body.password || body.password.length < 6)
+    return showError('login-error', 'Password must be at least 6 characters.'), setLoading('login-btn', false);
 
   try {
     const res = await post('/login', body);
     if (!res.success) {
       showError('login-error', res.message || 'Login failed. Check your credentials.');
       return;
+    }
+    // Store JWT token
+    if (res.data.token) {
+      setToken(res.data.token);
     }
     currentUser = res.data.user;
     bootDashboard(res.data);
@@ -104,13 +150,25 @@ async function quickBMI() {
     el.innerHTML = 'Please enter valid height and weight.';
     return;
   }
-  try {
-    const res = await get(`/bmi?height=${h}&weight=${w}`);
+  if (h < 0.5 || h > 3.0) {
     el.classList.remove('hidden');
-    if (res.success) {
-      el.innerHTML = `<strong>BMI: ${res.data.bmi}</strong> — ${res.data.category}<br/><small>${res.data.advice}</small>`;
+    el.innerHTML = 'Height must be between 0.5 and 3.0 metres.';
+    return;
+  }
+  if (w < 20 || w > 400) {
+    el.classList.remove('hidden');
+    el.innerHTML = 'Weight must be between 20 and 400 kg.';
+    return;
+  }
+  try {
+    // BMI endpoint is public, no token needed
+    const res = await fetch(API + `/bmi?height=${h}&weight=${w}`);
+    const json = await res.json();
+    el.classList.remove('hidden');
+    if (json.success) {
+      el.innerHTML = `<strong>BMI: ${json.data.bmi}</strong> — ${json.data.category}<br/><small>${json.data.advice}</small>`;
     } else {
-      el.textContent = res.message || 'Something went wrong. Please try again.';
+      el.textContent = json.message || 'Something went wrong. Please try again.';
     }
   } catch (err) {
     console.error('[BMI Error]', err);
@@ -138,6 +196,11 @@ function fillOverview(data) {
 
   document.getElementById('welcome-msg')    .textContent = `Welcome, ${u.name}!`;
   document.getElementById('user-goal-badge').textContent = goalLabel(u.goal);
+
+  const profName = document.getElementById('profile-user-name');
+  const profEmail = document.getElementById('profile-user-email');
+  if (profName) profName.textContent = u.name;
+  if (profEmail) profEmail.textContent = u.email;
 
   document.getElementById('dash-bmi')    .textContent = u.bmi;
   document.getElementById('dash-bmi-cat').textContent = bmiCat(u.bmi);
@@ -357,6 +420,7 @@ async function loadExercises(muscle) {
     wrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   } catch (err) {
     console.error('[Exercises Error]', err);
+    handleAuthError(err);
     showToast('Something went wrong. Please try again.');
   }
 }
@@ -374,7 +438,10 @@ async function exchangeExercises() {
   btn.style.cursor = 'not-allowed';
   
   try {
-    const res = await fetch(`${API}/exercises/${currentMuscleGroup}/exchange`, { method: 'POST' });
+    const res = await fetch(`${API}/exercises/${currentMuscleGroup}/exchange`, {
+      method: 'POST',
+      headers: authHeaders(),
+    });
     const json = await res.json();
     if (json.success) {
       showToast('New exercises generated successfully!');
@@ -385,6 +452,7 @@ async function exchangeExercises() {
     }
   } catch (err) {
     console.error('[Exchange Error]', err);
+    handleAuthError(err);
     showToast('Something went wrong exchanging exercises.');
   } finally {
     btn.disabled = false;
@@ -451,6 +519,7 @@ async function loadGoals() {
     renderCalendar();
   } catch (err) {
     console.error('[Goals Error]', err);
+    handleAuthError(err);
     showToast('Something went wrong loading goals.');
   }
 }
@@ -565,6 +634,7 @@ async function markWorkoutDone() {
     }
   } catch (err) {
     console.error('[Workout Complete Error]', err);
+    handleAuthError(err);
     showToast('Something went wrong. Please try again.');
   }
 }
@@ -588,7 +658,10 @@ async function logFood() {
       } else {
           showToast(res.message || 'Failed to log food.');
       }
-  } catch(e) { showToast('Error logging food.'); }
+  } catch(e) {
+    handleAuthError(e);
+    showToast('Error logging food.');
+  }
 }
 
 async function logWater() {
@@ -608,7 +681,10 @@ async function logWater() {
       } else {
           showToast(res.message || 'Failed to log water.');
       }
-  } catch(e) { showToast('Error logging water.'); }
+  } catch(e) {
+    handleAuthError(e);
+    showToast('Error logging water.');
+  }
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -632,6 +708,7 @@ async function loadRecommendations() {
     }
   } catch (err) {
     console.error('[Recommendations Error]', err);
+    handleAuthError(err);
     showToast('Something went wrong. Please try again.');
   }
 }
@@ -662,6 +739,7 @@ async function sendChat() {
   } catch (err) {
     console.error('[Assistant Error]', err);
     removeMsg(typingId);
+    handleAuthError(err);
     addMsg('Server busy, please try again.', 'bot');
   }
 }
@@ -791,10 +869,16 @@ async function handleProfileUpdate(e) {
   };
 
   // Client-side validation
-  if (!body.name)       return showError('edit-error', 'Name is required.'),                    setLoading('edit-save-btn', false);
-  if (body.age  <= 0)   return showError('edit-error', 'Enter a valid age.'),                   setLoading('edit-save-btn', false);
-  if (body.height <= 0) return showError('edit-error', 'Enter a valid height (e.g. 1.75).'),    setLoading('edit-save-btn', false);
-  if (body.weight <= 0) return showError('edit-error', 'Enter a valid weight (e.g. 70).'),      setLoading('edit-save-btn', false);
+  if (!body.name || body.name.length < 3)
+    return showError('edit-error', 'Name must be at least 3 characters.'), setLoading('edit-save-btn', false);
+  if (!/^[A-Za-z ]+$/.test(body.name))
+    return showError('edit-error', 'Name should contain only letters and spaces.'), setLoading('edit-save-btn', false);
+  if (body.age < 10 || body.age > 120)
+    return showError('edit-error', 'Age must be between 10 and 120.'), setLoading('edit-save-btn', false);
+  if (body.height < 0.5 || body.height > 3.0)
+    return showError('edit-error', 'Height must be between 0.5 and 3.0 metres.'), setLoading('edit-save-btn', false);
+  if (body.weight < 20 || body.weight > 400)
+    return showError('edit-error', 'Weight must be between 20 and 400 kg.'), setLoading('edit-save-btn', false);
 
   // Check if AI needs to regenerate
   const needsAiRegen = body.goal !== currentUser.goal || body.weight !== currentUser.weight || body.height !== currentUser.height;
@@ -821,6 +905,7 @@ async function handleProfileUpdate(e) {
 
   } catch (err) {
     console.error('[Profile Update Error]', err);
+    handleAuthError(err);
     showError('edit-error', 'Cannot connect to server. Make sure the backend is running.');
   } finally {
     const btnText = document.querySelector('#edit-save-btn .btn-text');
@@ -864,6 +949,7 @@ function refreshDashboard(data) {
 
 function logout() {
   currentUser = null;
+  removeToken();
   document.getElementById('dashboard-screen').classList.add('hidden');
   document.getElementById('auth-screen')     .classList.replace('hidden', 'active');
   document.getElementById('login-form')   .reset();
@@ -873,30 +959,69 @@ function logout() {
 }
 
 // ══════════════════════════════════════════════════════════════
-// HTTP
+// HTTP — with JWT Authorization headers
 // ══════════════════════════════════════════════════════════════
 
+function authHeaders() {
+  const token = getToken();
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
+}
+
 async function get(path) {
-  const res = await fetch(API + path);
+  const res = await fetch(API + path, {
+    headers: authHeaders(),
+  });
+  if (res.status === 401 || res.status === 403) {
+    handleUnauthorized();
+    throw new Error('Unauthorized');
+  }
   return res.json();
 }
 
 async function post(path, body) {
   const res = await fetch(API + path, {
     method:  'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders(),
     body:    JSON.stringify(body),
   });
+  if (res.status === 401 || res.status === 403) {
+    handleUnauthorized();
+    throw new Error('Unauthorized');
+  }
   return res.json();
 }
 
 async function put(path, body) {
   const res = await fetch(API + path, {
     method:  'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders(),
     body:    JSON.stringify(body),
   });
+  if (res.status === 401 || res.status === 403) {
+    handleUnauthorized();
+    throw new Error('Unauthorized');
+  }
   return res.json();
+}
+
+// ══════════════════════════════════════════════════════════════
+// AUTH ERROR HANDLING
+// ══════════════════════════════════════════════════════════════
+
+function handleUnauthorized() {
+  showToast('Session expired. Please log in again.');
+  logout();
+}
+
+function handleAuthError(err) {
+  if (err && err.message === 'Unauthorized') {
+    // Already handled by handleUnauthorized
+    return;
+  }
 }
 
 // ══════════════════════════════════════════════════════════════

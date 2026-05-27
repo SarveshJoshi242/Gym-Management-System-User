@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="stylesheet"
     href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" />
-  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/style.css?v=5" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
@@ -42,15 +42,15 @@
         </div>
 
         <!-- ── LOGIN FORM ── -->
-        <form id="login-form" class="auth-form" onsubmit="handleLogin(event)" novalidate>
+        <form id="login-form" class="auth-form" onsubmit="handleLogin(event)">
           <div class="form-group">
-            <label for="login-name">Username</label>
-            <input id="login-name" type="text" placeholder="Enter your name" autocomplete="username" required />
+            <label for="login-email">Email</label>
+            <input id="login-email" type="email" placeholder="Enter your email" autocomplete="email" required />
           </div>
           <div class="form-group">
             <label for="login-pass">Password</label>
             <input id="login-pass" type="password" placeholder="Enter your password" autocomplete="current-password"
-              required />
+              minlength="6" required />
           </div>
           <div id="login-error" class="form-error hidden" role="alert"></div>
           <button type="submit" class="btn-primary" id="login-btn">
@@ -60,38 +60,46 @@
         </form>
 
         <!-- ── REGISTER FORM ── -->
-        <form id="register-form" class="auth-form hidden" onsubmit="handleRegister(event)" novalidate>
+        <form id="register-form" class="auth-form hidden" onsubmit="handleRegister(event)">
           <div class="form-row">
             <div class="form-group">
               <label for="reg-name">Full Name</label>
-              <input id="reg-name" type="text" placeholder="Your full name" required />
+              <input id="reg-name" type="text" placeholder="Your full name" minlength="3" maxlength="50"
+                pattern="^[A-Za-z ]+$" title="Only letters and spaces allowed" required />
             </div>
             <div class="form-group">
-              <label for="reg-age">Age</label>
-              <input id="reg-age" type="number" placeholder="e.g. 22" min="10" max="99" required />
+              <label for="reg-email">Email</label>
+              <input id="reg-email" type="email" placeholder="you@example.com" maxlength="100" required />
             </div>
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label for="reg-height">Height <span class="label-hint">(metres)</span></label>
-              <input id="reg-height" type="number" step="0.01" placeholder="e.g. 1.75" required />
+              <label for="reg-age">Age</label>
+              <input id="reg-age" type="number" placeholder="e.g. 22" min="10" max="120" required />
             </div>
             <div class="form-group">
-              <label for="reg-weight">Weight <span class="label-hint">(kg)</span></label>
-              <input id="reg-weight" type="number" step="0.1" placeholder="e.g. 70" required />
+              <label for="reg-height">Height <span class="label-hint">(metres)</span></label>
+              <input id="reg-height" type="number" step="0.01" placeholder="e.g. 1.75" min="0.5" max="3.0" required />
             </div>
           </div>
-          <div class="form-group">
-            <label for="reg-goal">Fitness Goal</label>
-            <select id="reg-goal">
-              <option value="fat_loss">🔥 Fat Loss</option>
-              <option value="weight_gain">💪 Weight Gain</option>
-              <option value="maintenance" selected>⚖️ Maintenance</option>
-            </select>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="reg-weight">Weight <span class="label-hint">(kg)</span></label>
+              <input id="reg-weight" type="number" step="0.1" placeholder="e.g. 70" min="20" max="400" required />
+            </div>
+            <div class="form-group">
+              <label for="reg-goal">Fitness Goal</label>
+              <select id="reg-goal" required>
+                <option value="fat_loss">🔥 Fat Loss</option>
+                <option value="weight_gain">💪 Weight Gain</option>
+                <option value="maintenance" selected>⚖️ Maintenance</option>
+              </select>
+            </div>
           </div>
           <div class="form-group">
             <label for="reg-pass">Password</label>
-            <input id="reg-pass" type="password" placeholder="Create a password" required />
+            <input id="reg-pass" type="password" placeholder="Create a password (min 6 chars)" minlength="6"
+              maxlength="100" required />
           </div>
           <div id="register-error" class="form-error hidden" role="alert"></div>
           <button type="submit" class="btn-primary" id="register-btn">
@@ -108,8 +116,8 @@
             <span class="divider-line"></span>
           </div>
           <div class="bmi-row">
-            <input id="bmi-h" type="number" step="0.01" placeholder="Height (m)" />
-            <input id="bmi-w" type="number" step="0.1" placeholder="Weight (kg)" />
+            <input id="bmi-h" type="number" step="0.01" placeholder="Height (m)" min="0.5" max="3.0" />
+            <input id="bmi-w" type="number" step="0.1" placeholder="Weight (kg)" min="20" max="400" />
             <button class="btn-outline" onclick="quickBMI()">Check</button>
           </div>
           <div id="bmi-result" class="bmi-result hidden"></div>
@@ -172,6 +180,9 @@
           </div>
           <button class="btn-edit-profile" onclick="openEditModal()" title="Edit Profile">
             ✏️ Edit Profile
+          </button>
+          <button class="btn-logout-mobile" onclick="logout()" title="Logout">
+            🚪 Logout
           </button>
           <span id="user-goal-badge" class="goal-badge">—</span>
         </div>
@@ -399,6 +410,30 @@
       </section>
 
     </main>
+
+    <!-- Bottom Navigation Bar (Mobile only) -->
+    <nav class="bottom-nav">
+      <button class="nav-item active" data-panel="overview" onclick="showPanel('overview')">
+        <span class="nav-icon">📊</span>
+        <span class="nav-label">Overview</span>
+      </button>
+      <button class="nav-item" data-panel="exercises" onclick="showPanel('exercises')">
+        <span class="nav-icon">💪</span>
+        <span class="nav-label">Exercises</span>
+      </button>
+      <button class="nav-item" data-panel="goals" onclick="showPanel('goals')">
+        <span class="nav-icon">🎯</span>
+        <span class="nav-label">Daily Goals</span>
+      </button>
+      <button class="nav-item" data-panel="recommend" onclick="showPanel('recommend')">
+        <span class="nav-icon">🧠</span>
+        <span class="nav-label">Recommend</span>
+      </button>
+      <button class="nav-item" data-panel="assistant" onclick="showPanel('assistant')">
+        <span class="nav-icon">🤖</span>
+        <span class="nav-label">IronMind AI</span>
+      </button>
+    </nav>
   </div>
 
   <!-- ════════════════════════════════════
@@ -415,27 +450,28 @@
 
       <!-- Body -->
       <div class="modal-body">
-        <form id="edit-form" onsubmit="handleProfileUpdate(event)" novalidate>
+        <form id="edit-form" onsubmit="handleProfileUpdate(event)">
 
           <div class="form-row">
             <div class="form-group">
               <label for="edit-name">Full Name</label>
-              <input id="edit-name" type="text" placeholder="Your name" required />
+              <input id="edit-name" type="text" placeholder="Your name" minlength="3" maxlength="50"
+                pattern="^[A-Za-z ]+$" title="Only letters and spaces" required />
             </div>
             <div class="form-group">
               <label for="edit-age">Age</label>
-              <input id="edit-age" type="number" placeholder="e.g. 22" min="1" max="120" required />
+              <input id="edit-age" type="number" placeholder="e.g. 22" min="10" max="120" required />
             </div>
           </div>
 
           <div class="form-row">
             <div class="form-group">
               <label for="edit-height">Height <span class="label-hint">(metres)</span></label>
-              <input id="edit-height" type="number" step="0.01" placeholder="e.g. 1.75" required />
+              <input id="edit-height" type="number" step="0.01" placeholder="e.g. 1.75" min="0.5" max="3.0" required />
             </div>
             <div class="form-group">
               <label for="edit-weight">Weight <span class="label-hint">(kg)</span></label>
-              <input id="edit-weight" type="number" step="0.1" placeholder="e.g. 70" required />
+              <input id="edit-weight" type="number" step="0.1" placeholder="e.g. 70" min="20" max="400" required />
             </div>
           </div>
 
@@ -473,8 +509,7 @@
   <!-- Toast -->
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
 
-  <script src="js/config.js"></script>
-  <script src="js/app.js"></script>
+  <script src="js/app.js?v=5"></script>
 </body>
 
 </html>

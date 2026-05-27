@@ -12,6 +12,7 @@ import com.gymplus.repository.UserRepository;
 import com.gymplus.repository.ChatLogRepository;
 import com.gymplus.repository.FoodEntryRepository;
 import com.gymplus.repository.WaterLogRepository;
+import com.gymplus.security.JwtUtil;
 import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +23,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.HttpEntity;
 
+import jakarta.validation.Valid;
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
@@ -35,7 +37,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 
 @RestController
 @RequestMapping("/api")
-@CrossOrigin(origins = "${cors.allowed.origin}")
 public class ApiController {
 
     @Autowired
@@ -55,6 +56,9 @@ public class ApiController {
 
     @Autowired
     private WaterLogRepository waterLogRepository;
+
+    @Autowired
+    private JwtUtil jwtUtil;
 
     @org.springframework.beans.factory.annotation.Value("${gemini.api.key}")
     private String geminiApiKey;
@@ -151,9 +155,31 @@ public class ApiController {
 
         try {
             com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
-            Map<String, String> map = mapper.readValue(jsonReply, java.util.Map.class);
-            user.setWorkoutPlan(map.getOrDefault("workoutPlan", "Error generating plan."));
-            user.setDietTips(map.getOrDefault("dietTips", "Error generating tips."));
+            Map<String, Object> map = mapper.readValue(jsonReply, new com.fasterxml.jackson.core.type.TypeReference<Map<String, Object>>(){});
+            
+            Object workoutPlanObj = map.get("workoutPlan");
+            if (workoutPlanObj instanceof List) {
+                List<?> list = (List<?>) workoutPlanObj;
+                StringBuilder sb = new StringBuilder();
+                for (Object item : list) {
+                    sb.append(item.toString()).append("\n");
+                }
+                user.setWorkoutPlan(sb.toString().trim());
+            } else {
+                user.setWorkoutPlan(workoutPlanObj != null ? workoutPlanObj.toString() : "Error generating plan.");
+            }
+            
+            Object dietTipsObj = map.get("dietTips");
+            if (dietTipsObj instanceof List) {
+                List<?> list = (List<?>) dietTipsObj;
+                StringBuilder sb = new StringBuilder();
+                for (Object item : list) {
+                    sb.append("- ").append(item.toString()).append("\n");
+                }
+                user.setDietTips(sb.toString().trim());
+            } else {
+                user.setDietTips(dietTipsObj != null ? dietTipsObj.toString() : "Error generating tips.");
+            }
         } catch (Exception e) {
             System.err.println("JSON parse error or API failure: " + e.getMessage() + " | Reply: " + jsonReply);
             
@@ -197,23 +223,43 @@ public class ApiController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody User userRequest) {
-        if (userRepository.findByName(userRequest.getName()).isPresent()) {
-            return ResponseEntity.ok(errorResponse("Username already taken."));
+    public ResponseEntity<?> register(@Valid @RequestBody User userRequest) {
+        // Normalize email
+        userRequest.setEmail(userRequest.getEmail().trim().toLowerCase());
+
+        // Check for duplicate email
+        if (userRepository.findByEmail(userRequest.getEmail()).isPresent()) {
+            return ResponseEntity.ok(errorResponse("Email already exists."));
         }
         
         userRequest.setPassword(BCrypt.hashpw(userRequest.getPassword(), BCrypt.gensalt()));
         User savedUser = userRepository.save(userRequest);
+
+        // Generate JWT token
+        String token = jwtUtil.generateToken(savedUser.getEmail());
+
+        Map<String, Object> responseData = getUserDashboardData(savedUser);
+        responseData.put("token", token);
         
-        return ResponseEntity.ok(successResponse(getUserDashboardData(savedUser)));
+        return ResponseEntity.ok(successResponse(responseData));
     }
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> credentials) {
-        String name = credentials.get("name");
+        String email = credentials.get("email");
         String password = credentials.get("password");
+
+        if (email == null || email.isBlank()) {
+            return ResponseEntity.ok(errorResponse("Email is required."));
+        }
+        if (password == null || password.isBlank()) {
+            return ResponseEntity.ok(errorResponse("Password is required."));
+        }
+
+        // Normalize email
+        email = email.trim().toLowerCase();
         
-        Optional<User> userOpt = userRepository.findByName(name);
+        Optional<User> userOpt = userRepository.findByEmail(email);
         if (userOpt.isPresent()) {
             User user = userOpt.get();
             String dbHash = user.getPassword();
@@ -222,7 +268,10 @@ public class ApiController {
                     // Update to bcrypt for future
                     user.setPassword(BCrypt.hashpw(password, BCrypt.gensalt()));
                     userRepository.save(user);
-                    return ResponseEntity.ok(successResponse(getUserDashboardData(user)));
+                    String token = jwtUtil.generateToken(user.getEmail());
+                    Map<String, Object> responseData = getUserDashboardData(user);
+                    responseData.put("token", token);
+                    return ResponseEntity.ok(successResponse(responseData));
                 }
             } else if (dbHash != null) {
                 // Fix for Python bcrypt hashes that use $2b$ or $2y$ instead of $2a$
@@ -230,11 +279,14 @@ public class ApiController {
                     dbHash = "$2a$" + dbHash.substring(4);
                 }
                 if (BCrypt.checkpw(password, dbHash)) {
-                    return ResponseEntity.ok(successResponse(getUserDashboardData(user)));
+                    String token = jwtUtil.generateToken(user.getEmail());
+                    Map<String, Object> responseData = getUserDashboardData(user);
+                    responseData.put("token", token);
+                    return ResponseEntity.ok(successResponse(responseData));
                 }
             }
         }
-        return ResponseEntity.ok(errorResponse("Invalid username or password."));
+        return ResponseEntity.ok(errorResponse("Invalid email or password."));
     }
 
     @GetMapping("/bmi")
@@ -434,11 +486,11 @@ public class ApiController {
 
         String botReply = callGeminiApi(context);
         
-        ChatLog log = new ChatLog();
-        log.setUserId(userId);
-        log.setQuery(query);
-        log.setReply(botReply);
-        chatLogRepository.save(log);
+        ChatLog chatLog = new ChatLog();
+        chatLog.setUserId(userId);
+        chatLog.setQuery(query);
+        chatLog.setReply(botReply);
+        chatLogRepository.save(chatLog);
         
         Map<String, Object> data = new HashMap<>();
         data.put("reply", botReply);
