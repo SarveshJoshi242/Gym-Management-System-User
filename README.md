@@ -25,6 +25,14 @@ GymPlus is a modern, AI-powered gym management dashboard built to track fitness 
 
 ---
 
+## 🌍 Deployment Architecture
+The live application is hosted across three platforms to ensure optimal performance and security:
+- **Frontend**: Deployed on **Vercel** (`https://gym-management-system-user.vercel.app/`). Serves the static HTML, CSS, and JS assets.
+- **Backend API**: Hosted as a Dockerized Java Web Service on **Render**. Handles all business logic, AI integration, and database communication.
+- **Database**: Hosted on **Railway**. Provides a fully managed MySQL instance for persistent user and fitness data storage.
+
+---
+
 ## 🚀 Getting Started
 
 Follow these instructions to set up the project locally.
