@@ -17,7 +17,7 @@ public class SelfPingService {
      * Pings the application's health endpoint every 10 minutes (600,000 milliseconds)
      * if the RENDER_EXTERNAL_URL environment variable is set.
      */
-    @Scheduled(fixedRate = 600000)
+    @Scheduled(fixedRate = 600000, initialDelay = 60000)
     public void pingSelf() {
         if (renderExternalUrl == null || renderExternalUrl.trim().isEmpty()) {
             System.out.println("[SelfPingService] RENDER_EXTERNAL_URL is not set. Skipping self-ping.");

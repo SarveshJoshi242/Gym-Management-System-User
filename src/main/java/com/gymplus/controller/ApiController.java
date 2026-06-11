@@ -505,6 +505,12 @@ public class ApiController {
     };
 
     private String callGeminiApi(String prompt) {
+        if (getApiKey() == null || getApiKey().trim().isEmpty()) {
+            System.err.println("[Gemini] API key is missing or empty. Skipping HTTP calls.");
+            return "I'm having trouble connecting to my fitness knowledge base right now. Please try again later.";
+        }
+
+        long startTime = System.currentTimeMillis();
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(3000);
         factory.setReadTimeout(12000);
@@ -517,12 +523,14 @@ public class ApiController {
         HttpEntity<String> entity = new HttpEntity<>(requestBody, headers);
         
         for (String model : GEMINI_MODELS) {
-            // Each model gets up to 2 attempts (retry once on 503/transient errors)
             for (int attempt = 0; attempt < 2; attempt++) {
                 try {
                     String url = "https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent?key=" + getApiKey();
-                    System.out.println("[Gemini] Trying " + model + " (attempt " + (attempt + 1) + ")");
+                    System.out.println("[Gemini] Trying " + model + " (attempt " + (attempt + 1) + ") at " + (System.currentTimeMillis() - startTime) + "ms");
+                    
+                    long callStart = System.currentTimeMillis();
                     ResponseEntity<Map> response = restTemplate.postForEntity(url, entity, Map.class);
+                    System.out.println("[Gemini] " + model + " response received in " + (System.currentTimeMillis() - callStart) + "ms");
                     
                     if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                         Map<String, Object> body = response.getBody();
@@ -531,23 +539,22 @@ public class ApiController {
                             Map<String, Object> content = (Map<String, Object>) candidates.get(0).get("content");
                             List<Map<String, Object>> parts = (List<Map<String, Object>>) content.get("parts");
                             if (parts != null && !parts.isEmpty()) {
-                                System.out.println("[Gemini] Success with " + model);
+                                System.out.println("[Gemini] Success with " + model + " total time: " + (System.currentTimeMillis() - startTime) + "ms");
                                 return (String) parts.get(0).get("text");
                             }
                         }
                     }
-                    break; // Got a 2xx but no content — skip to next model
+                    break;
                 } catch (Exception e) {
                     String msg = e.getMessage() != null ? e.getMessage() : "";
-                    System.err.println("[Gemini] " + model + " failed: " + msg.substring(0, Math.min(80, msg.length())));
+                    System.err.println("[Gemini] " + model + " failed after " + (System.currentTimeMillis() - startTime) + "ms: " + msg.substring(0, Math.min(80, msg.length())));
                     
-                    // Retry on 503 (model overloaded) with a short 5s wait
                     if (msg.contains("503") && attempt == 0) {
                         System.out.println("[Gemini] Model overloaded, retrying in 5s...");
                         try { Thread.sleep(5000); } catch (InterruptedException ignored) {}
                         continue;
                     }
-                    break; // 429 or other error — skip to next model
+                    break;
                 }
             }
         }
