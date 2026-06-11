@@ -497,12 +497,17 @@ public class ApiController {
         return ResponseEntity.ok(successResponse(data));
     }
     
-    private static final String[] GEMINI_MODELS = {"gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.0-flash-lite"};
+    private static final String[] GEMINI_MODELS = {
+        "gemini-3.5-flash", 
+        "gemini-3.1-flash-lite", 
+        "gemini-1.5-flash",
+        "gemini-2.5-flash"
+    };
 
     private String callGeminiApi(String prompt) {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-        factory.setConnectTimeout(8000);
-        factory.setReadTimeout(45000);
+        factory.setConnectTimeout(3000);
+        factory.setReadTimeout(12000);
         RestTemplate restTemplate = new RestTemplate(factory);
         
         HttpHeaders headers = new HttpHeaders();
