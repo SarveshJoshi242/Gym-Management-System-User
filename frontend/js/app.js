@@ -88,8 +88,12 @@ async function handleRegister(e) {
       return;
     }
     // Store JWT token
-    if (res.data.token) {
+    console.log("[Register Success] Response data:", res.data);
+    if (res.data && res.data.token) {
+      console.log("[Register Success] Saving token:", res.data.token);
       setToken(res.data.token);
+    } else {
+      console.warn("[Register Success] No token found in response!");
     }
     currentUser = res.data.user;
     bootDashboard(res.data);
@@ -126,8 +130,12 @@ async function handleLogin(e) {
       return;
     }
     // Store JWT token
-    if (res.data.token) {
+    console.log("[Login Success] Response data:", res.data);
+    if (res.data && res.data.token) {
+      console.log("[Login Success] Saving token:", res.data.token);
       setToken(res.data.token);
+    } else {
+      console.warn("[Login Success] No token found in response!");
     }
     currentUser = res.data.user;
     bootDashboard(res.data);
