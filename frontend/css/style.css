@@ -1605,3 +1605,12 @@ body   {
 #info-modal-body strong {
   color: var(--text-1);
 }
+
+/* Session restoring state styling */
+html.session-restoring #auth-screen {
+  display: none !important;
+}
+
+html.session-restoring #splash-screen {
+  display: flex !important;
+}

@@ -1288,8 +1288,11 @@ async function openExerciseInfo(name) {
       }
     } catch (err) {
       console.error('[Auto-Login Error]', err);
+    } finally {
+      document.documentElement.classList.remove('session-restoring');
     }
   } else {
     console.log("[initApp] No token found in localStorage.");
+    document.documentElement.classList.remove('session-restoring');
   }
 })();
