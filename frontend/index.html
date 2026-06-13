@@ -193,7 +193,16 @@
         <div class="cards-grid">
 
           <div class="card">
-            <div class="card-header"><span>⚖️</span><span>BMI Index</span></div>
+            <div class="card-header">
+              <div class="card-header-title"><span>⚖️</span><span>BMI Index</span></div>
+              <button class="info-btn" onclick="openInfoModal('bmi')" aria-label="BMI Index Info" title="Learn more about BMI Index">
+                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="16" x2="12" y2="12"></line>
+                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+              </button>
+            </div>
             <div class="bmi-display">
               <span id="dash-bmi" class="bmi-number">—</span>
               <span id="dash-bmi-cat" class="bmi-cat">—</span>
@@ -209,7 +218,16 @@
           </div>
 
           <div class="card">
-            <div class="card-header"><span>📋</span><span>My Stats</span></div>
+            <div class="card-header">
+              <div class="card-header-title"><span>📋</span><span>My Stats</span></div>
+              <button class="info-btn" onclick="openInfoModal('stats')" aria-label="My Stats Info" title="Learn more about My Stats">
+                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="16" x2="12" y2="12"></line>
+                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+              </button>
+            </div>
             <div class="stats-list">
               <div class="stat-row"><span>Height</span><strong id="dash-height">—</strong></div>
               <div class="stat-row"><span>Weight</span><strong id="dash-weight">—</strong></div>
@@ -219,13 +237,31 @@
           </div>
 
           <div class="card center-card">
-            <div class="card-header"><span>🔥</span><span>Calorie Target</span></div>
+            <div class="card-header">
+              <div class="card-header-title"><span>🔥</span><span>Calorie Target</span></div>
+              <button class="info-btn" onclick="openInfoModal('calorie')" aria-label="Calorie Target Info" title="Learn more about Calorie Target">
+                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="16" x2="12" y2="12"></line>
+                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+              </button>
+            </div>
             <div class="big-num red" id="dash-calories">—</div>
             <div class="big-unit">kcal / day</div>
           </div>
 
           <div class="card center-card">
-            <div class="card-header"><span>💧</span><span>Water Intake</span></div>
+            <div class="card-header">
+              <div class="card-header-title"><span>💧</span><span>Water Intake</span></div>
+              <button class="info-btn" onclick="openInfoModal('water')" aria-label="Water Intake Info" title="Learn more about Water Intake">
+                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="16" x2="12" y2="12"></line>
+                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+              </button>
+            </div>
             <div class="big-num blue" id="dash-water">—</div>
             <div class="big-unit">litres / day</div>
           </div>
@@ -236,8 +272,16 @@
 
           <!-- Chart Column -->
           <div class="card" style="flex: 1; min-width: 300px; display: flex; flex-direction: column; padding: 24px;">
-            <div class="card-header" style="margin-bottom: 16px; justify-content: center;"><span>📊</span><span>Activity
-                Rings</span></div>
+            <div class="card-header" style="margin-bottom: 16px;">
+              <div class="card-header-title"><span>📊</span><span>Activity Rings</span></div>
+              <button class="info-btn" onclick="openInfoModal('rings')" aria-label="Activity Rings Info" title="Learn more about Activity Rings">
+                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="16" x2="12" y2="12"></line>
+                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+              </button>
+            </div>
             <div
               style="position: relative; flex: 1; min-height: 250px; display: flex; align-items: center; justify-content: center;">
               <canvas id="goalChart"></canvas>
@@ -254,8 +298,16 @@
             </div>
 
             <div class="card" style="padding: 28px; flex: 1;">
-              <div class="card-header" style="margin-bottom: 24px; font-size: 0.8rem;"><span>📝</span><span>Log Your
-                  Intake</span></div>
+              <div class="card-header" style="margin-bottom: 24px; font-size: 0.8rem;">
+                <div class="card-header-title"><span>📝</span><span>Log Your Intake</span></div>
+                <button class="info-btn" onclick="openInfoModal('intake')" aria-label="Log Your Intake Info" title="Learn more about Log Your Intake">
+                  <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                  </svg>
+                </button>
+              </div>
               <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px;">
 
                 <!-- Food Log -->
@@ -270,7 +322,7 @@
                       style="width: 100%; padding: 12px 16px; border-radius: var(--radius-xs); border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: white; outline: none; transition: all var(--dur) var(--ease);"
                       onfocus="this.style.borderColor='var(--red)'; this.style.background='rgba(255,255,255,0.08)';"
                       onblur="this.style.borderColor='rgba(255,255,255,0.1)'; this.style.background='rgba(255,255,255,0.05)';" />
-                    <input type="number" id="food-cal-input" placeholder="Calories (kcal)"
+                    <input type="number" id="food-cal-input" placeholder="Calories (kcal)" min="1" max="5000"
                       style="width: 100%; padding: 12px 16px; border-radius: var(--radius-xs); border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: white; outline: none; transition: all var(--dur) var(--ease);"
                       onfocus="this.style.borderColor='var(--red)'; this.style.background='rgba(255,255,255,0.08)';"
                       onblur="this.style.borderColor='rgba(255,255,255,0.1)'; this.style.background='rgba(255,255,255,0.05)';" />
@@ -287,7 +339,7 @@
                     <span style="font-size: 1.1rem;">💧</span> Log Water
                   </div>
                   <div style="display: flex; flex-direction: column; gap: 12px;">
-                    <input type="number" id="water-amount-input" step="0.1" placeholder="Amount in Litres (e.g., 0.5)"
+                    <input type="number" id="water-amount-input" min="0.01" max="5.0" step="any" placeholder="Amount in Litres (e.g., 0.5)"
                       style="width: 100%; padding: 12px 16px; border-radius: var(--radius-xs); border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: white; outline: none; transition: all var(--dur) var(--ease);"
                       onfocus="this.style.borderColor='var(--blue)'; this.style.background='rgba(255,255,255,0.08)';"
                       onblur="this.style.borderColor='rgba(255,255,255,0.1)'; this.style.background='rgba(255,255,255,0.05)';" />
@@ -305,7 +357,16 @@
 
       <!-- ── Exercises ── -->
       <section id="panel-exercises" class="panel hidden">
-        <h2 class="panel-title">💪 Muscle-Wise Exercises</h2>
+        <h2 class="panel-title" style="display: flex; align-items: center; gap: 8px;">
+          <span>💪 Muscle-Wise Exercises</span>
+          <button class="info-btn" onclick="openInfoModal('exercises')" aria-label="Exercises Info" title="Learn more about Exercises">
+            <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="16" x2="12" y2="12"></line>
+              <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+          </button>
+        </h2>
         <div class="muscle-grid" id="muscle-grid"></div>
         <div id="exercise-wrap" class="exercise-wrap hidden">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
@@ -324,7 +385,16 @@
 
       <!-- ── Goals ── -->
       <section id="panel-goals" class="panel hidden">
-        <h2 class="panel-title">🎯 Daily Goals</h2>
+        <h2 class="panel-title" style="display: flex; align-items: center; gap: 8px;">
+          <span>🎯 Daily Goals</span>
+          <button class="info-btn" onclick="openInfoModal('daily_goals')" aria-label="Daily Goals Info" title="Learn more about Daily Goals">
+            <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="16" x2="12" y2="12"></line>
+              <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+          </button>
+        </h2>
         <div class="goals-grid">
           <div class="goal-card">
             <div class="gc-icon">🔥</div>
@@ -365,7 +435,16 @@
 
       <!-- ── Recommendations ── -->
       <section id="panel-recommend" class="panel hidden">
-        <h2 class="panel-title">Your Recommendations</h2>
+        <h2 class="panel-title" style="display: flex; align-items: center; gap: 8px;">
+          <span>Your Recommendations</span>
+          <button class="info-btn" onclick="openInfoModal('recommend')" aria-label="Recommendations Info" title="Learn more about Recommendations">
+            <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="16" x2="12" y2="12"></line>
+              <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+          </button>
+        </h2>
         <div class="rec-grid">
           <div class="rec-card">
             <div class="rec-header">🏋 Workout Plan</div>
@@ -503,6 +582,24 @@
         </form>
       </div>
 
+    </div>
+  </div>
+
+  <!-- ── INFORMATION MODAL ── -->
+  <div id="info-modal" class="modal-backdrop hidden" onclick="handleInfoBackdropClick(event)">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="info-modal-title" style="border-top-color: var(--blue);">
+      <!-- Header -->
+      <div class="modal-header">
+        <h2 id="info-modal-title" class="modal-title">ℹ️ Module Info</h2>
+        <button class="modal-close" onclick="closeInfoModal()" aria-label="Close">✕</button>
+      </div>
+      <!-- Body -->
+      <div class="modal-body" id="info-modal-body" style="padding: 24px; color: var(--text-2); font-size: 0.95rem; line-height: 1.6;">
+        <!-- Dynamic content goes here -->
+      </div>
+      <div class="modal-actions" style="padding: 16px 24px; display: flex; justify-content: flex-end; border-top: 1px solid var(--border);">
+        <button class="btn-primary" onclick="closeInfoModal()" style="background: linear-gradient(135deg, var(--blue), #0284c7); box-shadow: 0 4px 12px rgba(14,165,233,0.2);">Got It</button>
+      </div>
     </div>
   </div>
 

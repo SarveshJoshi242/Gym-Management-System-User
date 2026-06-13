@@ -404,6 +404,13 @@ async function loadExercises(muscle) {
           <div class="ex-card-header">
             <span class="ex-num">#${i+1}</span>
             <span class="ex-name">${ex.name}</span>
+            <button class="info-btn" onclick="event.stopPropagation(); openExerciseInfo('${ex.name.replace(/'/g, "\\'")}')" aria-label="Exercise Info" title="Learn how to perform this exercise" style="margin-right: 8px;">
+              <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+              </svg>
+            </button>
             <div class="ex-check ${isDone ? 'checked' : ''}" id="ex-check-${ex.id}">
               ${isDone ? '✓' : ''}
             </div>
@@ -643,8 +650,12 @@ async function logFood() {
   if (!currentUser) return;
   const item = document.getElementById('food-item-input').value.trim();
   const cals = +document.getElementById('food-cal-input').value;
-  if (!item || cals <= 0) {
-      showToast('Please enter a valid food item and calories.');
+  if (!item) {
+      showToast('Please enter a food item name.');
+      return;
+  }
+  if (cals <= 0 || cals > 5000) {
+      showToast('Please enter calories between 1 and 5,000 kcal.');
       return;
   }
   
@@ -667,8 +678,8 @@ async function logFood() {
 async function logWater() {
   if (!currentUser) return;
   const amt = +document.getElementById('water-amount-input').value;
-  if (amt <= 0) {
-      showToast('Please enter a valid water amount in Litres.');
+  if (amt <= 0 || amt > 5.0) {
+      showToast('Please enter a water amount between 0.01 and 5.0 Litres.');
       return;
   }
   
@@ -1064,4 +1075,188 @@ function bmiCat(bmi) {
   if (bmi < 25)   return 'Normal';
   if (bmi < 30)   return 'Overweight';
   return 'Obese';
+}
+
+// ══════════════════════════════════════════════════════════════
+// MODULE INFORMATION DICTIONARY & MODAL CONTROL
+// ══════════════════════════════════════════════════════════════
+
+const MODULE_INFO_DATA = {
+  bmi: {
+    title: "⚖️ BMI Index",
+    html: `
+      <p><strong>Body Mass Index (BMI)</strong> is a simple calculation using a person's height and weight. It is a reliable indicator of body fatness for most people.</p>
+      <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); padding: 12px; border-radius: var(--radius-xs); margin-bottom: 16px; font-size: 0.9rem;">
+        <span style="font-family: monospace; color: var(--text-1); font-weight: 700;">BMI = Weight (kg) / [Height (m)]²</span>
+      </div>
+      <p style="margin-bottom: 8px; font-weight: 700; color: var(--text-1);">Standard BMI Categories:</p>
+      <ul style="padding-left: 20px; margin-bottom: 16px;">
+        <li><span class="blue">●</span> <strong>Underweight:</strong> BMI is less than 18.5</li>
+        <li><span class="green">●</span> <strong>Normal Weight:</strong> BMI is 18.5 to 24.9</li>
+        <li><span style="color: orange;">●</span> <strong>Overweight:</strong> BMI is 25.0 to 29.9</li>
+        <li><span class="red">●</span> <strong>Obese:</strong> BMI is 30.0 or higher</li>
+      </ul>
+      <p>Your BMI is automatically computed from your profile height and weight. To lower your BMI, seek a calorie deficit (Fat Loss). To increase it, seek a calorie surplus (Weight Gain).</p>
+    `
+  },
+  stats: {
+    title: "📋 My Stats",
+    html: `
+      <p>This module displays your active physical parameters: height, weight, age, and your fitness goal.</p>
+      <p>These values serve as inputs to calculate custom daily fitness targets. Keep them updated to receive the most accurate recommendations.</p>
+      <p><strong>Action:</strong> Click on the <strong>✏️ Edit Profile</strong> button at the top-right of your screen whenever your stats change to automatically recalculate and adjust your targets.</p>
+    `
+  },
+  calorie: {
+    title: "🔥 Calorie Target",
+    html: `
+      <p>Your daily calorie target represents the estimated energy intake required to achieve your fitness goal:</p>
+      <ul style="padding-left: 20px; margin-bottom: 16px;">
+        <li><strong>Fat Loss:</strong> Restricts energy intake to a safe deficit (approx. -500 kcal) to encourage body fat burning.</li>
+        <li><strong>Weight Gain:</strong> Increases energy intake to a healthy surplus (approx. +300 kcal) to support muscle growth.</li>
+        <li><strong>Maintenance:</strong> Matches daily energy expenditure to maintain weight.</li>
+      </ul>
+      <p>Your daily energy requirements are determined using the scientifically validated <em>Mifflin-St Jeor</em> equation, incorporating your age, height, and weight, adjusted for baseline activity level.</p>
+      <p>Log your food intake daily to track your calories and close your red calorie ring!</p>
+    `
+  },
+  water: {
+    title: "💧 Water Intake",
+    html: `
+      <p>Water is crucial for muscle function, joint lubrication, metabolic efficiency, and recovery.</p>
+      <p>Your target hydration level is estimated based on your body weight (approx. 35-40ml of water per kg of weight), scaled for basic daily activity.</p>
+      <p>Log your water consumption in the <strong>Log Your Intake</strong> module throughout the day. Aim to reach your target and close your blue water ring!</p>
+    `
+  },
+  rings: {
+    title: "📊 Activity Rings",
+    html: `
+      <p>The activity rings provide a real-time progress visualization for your daily health goals:</p>
+      <ul style="padding-left: 20px; margin-bottom: 16px;">
+        <li><strong class="red">Outer Ring (Red):</strong> Calories Consumed vs. Calorie Target.</li>
+        <li><strong class="blue">Middle Ring (Blue):</strong> Water Consumed vs. Water Intake Target.</li>
+        <li><strong class="green">Inner Ring (Green):</strong> Today's Workout Status (0% incomplete, 100% complete).</li>
+      </ul>
+      <p>Aim to close all three rings daily to establish healthy, sustainable habits!</p>
+    `
+  },
+  intake: {
+    title: "📝 Log Your Intake",
+    html: `
+      <p>This module allows you to track what you consume during the day:</p>
+      <ul style="padding-left: 20px; margin-bottom: 16px;">
+        <li><strong>Log Food:</strong> Enter the name of the food item and its estimated calories (kcal). Press "+ Add Food" to add it to your daily total.</li>
+        <li><strong>Log Water:</strong> Enter the volume in Litres (e.g., 0.25 for a cup, 0.5 for a bottle) and press "+ Add Water".</li>
+      </ul>
+      <p>Every log will immediately update your calorie/water intake displays and the corresponding progress rings.</p>
+    `
+  },
+  exercises: {
+    title: "💪 Muscle-Wise Exercises",
+    html: `
+      <p>This panel shows recommended physical exercises grouped by target muscles (e.g. Chest, Back, Legs).</p>
+      <ul style="padding-left: 20px; margin-bottom: 16px;">
+        <li>Select a muscle group from the grid to reveal a curated list of exercises.</li>
+        <li>Click <strong>🔄 Generate New</strong> to refresh the exercises list with alternatives.</li>
+        <li>Review descriptions, targets, sets, reps, and time constraints before starting.</li>
+      </ul>
+      <p>Follow the workout guidelines and click <strong>Mark Completed</strong> when you finish today's training session.</p>
+    `
+  },
+  daily_goals: {
+    title: "🎯 Daily Goals & Activity",
+    html: `
+      <p>This panel lists your static daily intake goals and lets you track workout compliance.</p>
+      <p><strong>Workout Activity Calendar:</strong> A historical record of your training days. Days highlighted in green indicate that you completed your workout.</p>
+      <p>Maintain your streak by completing workouts regularly and checking off green circles on the calendar!</p>
+    `
+  },
+  recommend: {
+    title: "🧠 Personal Recommendations",
+    html: `
+      <p>These recommendations are generated dynamically based on your physical stats and fitness goal:</p>
+      <ul style="padding-left: 20px; margin-bottom: 16px;">
+        <li><strong>Workout Plan:</strong> Curated split frequency, cardiovascular recommendations, and muscle training priorities.</li>
+        <li><strong>Diet Tips:</strong> Optimized macro ratios (proteins, fats, carbs) and hydration advice.</li>
+      </ul>
+      <p>If you change your goal (e.g., from Fat Loss to Weight Gain) in your profile, these tips will automatically update.</p>
+    `
+  }
+};
+
+function openInfoModal(key) {
+  const data = MODULE_INFO_DATA[key];
+  if (!data) return;
+
+  document.getElementById('info-modal-title').textContent = data.title;
+  document.getElementById('info-modal-body').innerHTML = data.html;
+
+  const backdrop = document.getElementById('info-modal');
+  const card     = backdrop.querySelector('.modal-card');
+  backdrop.classList.remove('hidden');
+  backdrop.classList.add('active');
+  card.classList.remove('closing');
+
+  document.addEventListener('keydown', handleInfoEsc);
+}
+
+function closeInfoModal() {
+  const backdrop = document.getElementById('info-modal');
+  const card     = backdrop.querySelector('.modal-card');
+
+  card.classList.add('closing');
+  setTimeout(() => {
+    backdrop.classList.add('hidden');
+    backdrop.classList.remove('active');
+    card.classList.remove('closing');
+    document.removeEventListener('keydown', handleInfoEsc);
+  }, 230);
+}
+
+function handleInfoBackdropClick(e) {
+  if (e.target.id === 'info-modal') closeInfoModal();
+}
+
+function handleInfoEsc(e) {
+  if (e.key === 'Escape') closeInfoModal();
+}
+
+async function openExerciseInfo(name) {
+  // Pre-fill the modal with a loading spinner
+  document.getElementById('info-modal-title').textContent = "🏋️ " + name;
+  document.getElementById('info-modal-body').innerHTML = `
+    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 0; gap: 16px;">
+      <span class="spinner" style="width: 28px; height: 28px; border-width: 3px; border-color: var(--blue) transparent var(--blue) transparent;"></span>
+      <span style="color: var(--text-3); font-size: 0.9rem;">Consulting IronMind AI knowledge base...</span>
+    </div>
+  `;
+
+  // Open the modal immediately so user sees the loading state
+  const backdrop = document.getElementById('info-modal');
+  const card     = backdrop.querySelector('.modal-card');
+  backdrop.classList.remove('hidden');
+  backdrop.classList.add('active');
+  card.classList.remove('closing');
+  document.addEventListener('keydown', handleInfoEsc);
+
+  try {
+    const res = await get(`/exercises/info?name=${encodeURIComponent(name)}`);
+    if (res.success && res.data && res.data.html) {
+      document.getElementById('info-modal-body').innerHTML = res.data.html;
+    } else {
+      throw new Error(res.message || "Failed to fetch exercise info.");
+    }
+  } catch (err) {
+    console.error('[Exercise Info Error]', err);
+    document.getElementById('info-modal-body').innerHTML = `
+      <p>Unable to fetch live guide for this exercise.</p>
+      <p><strong>Instructions:</strong></p>
+      <ol>
+        <li>Perform the exercise using a standard gym setup or weights.</li>
+        <li>Maintain a controlled motion (slow descent, powerful lift).</li>
+        <li>Keep correct posture and engage target muscle groups throughout the movements.</li>
+      </ol>
+      <p><strong>Safety Tip:</strong> Do not use weights that are too heavy to control. Focus on proper form first.</p>
+    `;
+  }
 }

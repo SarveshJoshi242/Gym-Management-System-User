@@ -567,6 +567,7 @@ body   {
 .card-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 7px;
   font-size: 0.7rem;
   font-weight: 700;
@@ -574,6 +575,12 @@ body   {
   letter-spacing: 0.09em;
   color: var(--text-2);
   margin-bottom: 18px;
+}
+
+.card-header-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
 }
 
 /* BMI card */
@@ -1550,4 +1557,51 @@ body   {
 .profile-action-item .action-desc {
   font-size: 0.78rem;
   color: var(--text-3);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   INFO BUTTONS & INFO MODAL
+   ════════════════════════════════════════════════════════════════ */
+.info-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-2);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border-radius: 50%;
+  transition: all var(--dur) var(--ease);
+}
+
+.info-btn:hover {
+  color: var(--blue);
+  background: rgba(14, 165, 233, 0.15);
+  transform: scale(1.15);
+}
+
+.info-btn:active {
+  transform: scale(0.95);
+}
+
+.info-btn svg {
+  display: block;
+}
+
+/* Make sure modal content looks clean */
+#info-modal-body p {
+  margin-bottom: 14px;
+}
+
+#info-modal-body ul {
+  margin-bottom: 14px;
+}
+
+#info-modal-body li {
+  margin-bottom: 6px;
+}
+
+#info-modal-body strong {
+  color: var(--text-1);
 }

@@ -311,6 +311,35 @@ public class ApiController {
         return ResponseEntity.ok(successResponse(exercises));
     }
 
+    @GetMapping("/exercises/info")
+    public ResponseEntity<?> getExerciseInfo(@RequestParam String name) {
+        if (name == null || name.trim().isEmpty()) {
+            return ResponseEntity.ok(errorResponse("Exercise name cannot be empty."));
+        }
+        
+        String prompt = "Provide a clean, brief guide on how to perform the gym exercise: '" + name.trim() + "'. " +
+                        "Include a 1-sentence description, 3 simple step-by-step instructions, and 1 safety tip. " +
+                        "Format the output strictly as HTML paragraphs <p>, a bold title for safety like <p><strong>Safety Tip:</strong>...</p>, " +
+                        "and a ordered list <ol> containing 3 list items <li>. " +
+                        "Do not include any markdown or backticks in the response. Return raw HTML text only.";
+                        
+        String reply = callGeminiApi(prompt);
+        if (reply == null || reply.isEmpty() || reply.contains("trouble connecting") || reply.startsWith("I'm having")) {
+            // Fallback content if Gemini is unavailable
+            String fallbackHtml = "<p>Learn how to perform the " + name.trim() + " exercise to build strength and endurance.</p>" +
+                                  "<p><strong>Instructions:</strong></p>" +
+                                  "<ol>" +
+                                  "<li>Position yourself correctly according to standard guidelines.</li>" +
+                                  "<li>Perform the exercise through a full range of motion.</li>" +
+                                  "<li>Maintain a controlled tempo for both lifting and lowering phases.</li>" +
+                                  "</ol>" +
+                                  "<p><strong>Safety Tip:</strong> Keep your core engaged and stop immediately if you feel sharp pain.</p>";
+            return ResponseEntity.ok(successResponse(Map.of("html", fallbackHtml)));
+        }
+        
+        return ResponseEntity.ok(successResponse(Map.of("html", reply)));
+    }
+
     @PostMapping("/exercises/{muscle}/exchange")
     public ResponseEntity<?> exchangeExercises(@PathVariable String muscle) {
         String prompt = "Return a JSON array of exactly 5 unique exercises for the muscle group: " + muscle + 
@@ -438,11 +467,20 @@ public class ApiController {
     public ResponseEntity<?> logFood(@RequestBody Map<String, Object> req) {
         Integer userId = ((Number) req.get("userId")).intValue();
         String item = (String) req.get("foodItem");
+        if (item == null || item.trim().isEmpty()) {
+            return ResponseEntity.ok(errorResponse("Food item name cannot be empty."));
+        }
+        if (item.length() > 100) {
+            return ResponseEntity.ok(errorResponse("Food item name is too long."));
+        }
         Integer cals = ((Number) req.get("calories")).intValue();
+        if (cals <= 0 || cals > 5000) {
+            return ResponseEntity.ok(errorResponse("Calories must be between 1 and 5000 kcal."));
+        }
         
         FoodEntry entry = new FoodEntry();
         entry.setUserId(userId);
-        entry.setFoodItem(item);
+        entry.setFoodItem(item.trim());
         entry.setCalories(cals);
         foodEntryRepository.save(entry);
         
@@ -457,6 +495,9 @@ public class ApiController {
     public ResponseEntity<?> logWater(@RequestBody Map<String, Object> req) {
         Integer userId = ((Number) req.get("userId")).intValue();
         Double amt = ((Number) req.get("amount")).doubleValue();
+        if (amt <= 0.0 || amt > 5.0) {
+            return ResponseEntity.ok(errorResponse("Water amount must be between 0.01 and 5.0 Litres."));
+        }
         
         WaterLog log = new WaterLog();
         log.setUserId(userId);
