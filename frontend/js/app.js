@@ -1260,3 +1260,21 @@ async function openExerciseInfo(name) {
     `;
   }
 }
+
+// ── Auto-Login on Page Load ──────────────────────────────────
+(async function initApp() {
+  const token = getToken();
+  if (token) {
+    try {
+      const res = await get('/me');
+      if (res.success && res.data) {
+        currentUser = res.data.user;
+        bootDashboard(res.data);
+      } else {
+        removeToken();
+      }
+    } catch (err) {
+      console.error('[Auto-Login Error]', err);
+    }
+  }
+})();

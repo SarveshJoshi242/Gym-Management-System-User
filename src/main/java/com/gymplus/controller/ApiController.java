@@ -340,6 +340,22 @@ public class ApiController {
         return ResponseEntity.ok(successResponse(Map.of("html", reply)));
     }
 
+    @GetMapping("/me")
+    public ResponseEntity<?> getProfile() {
+        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated()) {
+            Object principal = auth.getPrincipal();
+            if (principal instanceof String && !"anonymousUser".equals(principal)) {
+                String email = (String) principal;
+                Optional<User> userOpt = userRepository.findByEmail(email);
+                if (userOpt.isPresent()) {
+                    return ResponseEntity.ok(successResponse(getUserDashboardData(userOpt.get())));
+                }
+            }
+        }
+        return ResponseEntity.ok(errorResponse("Unauthorized"));
+    }
+
     @PostMapping("/exercises/{muscle}/exchange")
     public ResponseEntity<?> exchangeExercises(@PathVariable String muscle) {
         String prompt = "Return a JSON array of exactly 5 unique exercises for the muscle group: " + muscle + 
