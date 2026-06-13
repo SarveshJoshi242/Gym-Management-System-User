@@ -1264,17 +1264,24 @@ async function openExerciseInfo(name) {
 // ── Auto-Login on Page Load ──────────────────────────────────
 (async function initApp() {
   const token = getToken();
+  console.log("[initApp] Loaded token:", token);
   if (token) {
     try {
+      console.log("[initApp] Verifying token via GET /me...");
       const res = await get('/me');
+      console.log("[initApp] Response from GET /me:", res);
       if (res.success && res.data) {
+        console.log("[initApp] Session verified! Booting dashboard...");
         currentUser = res.data.user;
         bootDashboard(res.data);
       } else {
+        console.warn("[initApp] Auto-login failed: success=false, clearing token.");
         removeToken();
       }
     } catch (err) {
       console.error('[Auto-Login Error]', err);
     }
+  } else {
+    console.log("[initApp] No token found in localStorage.");
   }
 })();

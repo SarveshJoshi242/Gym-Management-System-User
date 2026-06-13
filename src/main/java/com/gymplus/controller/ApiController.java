@@ -342,14 +342,23 @@ public class ApiController {
 
     @GetMapping("/me")
     public ResponseEntity<?> getProfile() {
+        System.out.println("[ApiController] /me called");
         org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null) {
+            System.out.println("[ApiController] auth: authenticated=" + auth.isAuthenticated() + ", principal=" + auth.getPrincipal());
+        } else {
+            System.out.println("[ApiController] auth is null");
+        }
         if (auth != null && auth.isAuthenticated()) {
             Object principal = auth.getPrincipal();
             if (principal instanceof String && !"anonymousUser".equals(principal)) {
                 String email = (String) principal;
                 Optional<User> userOpt = userRepository.findByEmail(email);
                 if (userOpt.isPresent()) {
+                    System.out.println("[ApiController] /me success for " + email);
                     return ResponseEntity.ok(successResponse(getUserDashboardData(userOpt.get())));
+                } else {
+                    System.out.println("[ApiController] /me user not found in database: " + email);
                 }
             }
         }
