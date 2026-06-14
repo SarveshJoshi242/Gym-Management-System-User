@@ -425,24 +425,37 @@
             </svg>
           </button>
         </h2>
-        <div class="goals-grid">
-          <div class="goal-card">
+         <div class="goals-grid">
+          <div class="goal-card calorie">
             <div class="gc-icon">🔥</div>
             <div class="gc-label">Calorie Target</div>
             <div id="gd-calories" class="gc-value red">—</div>
             <div class="gc-unit">kcal / day</div>
+            <div class="goal-progress-container" style="width: 100%; height: 6px; background: rgba(255,255,255,0.05); border-radius: 3px; overflow: hidden; margin-top: 16px;">
+              <div id="gd-calorie-bar" style="height: 100%; width: 0%; background: var(--red); border-radius: 3px; transition: width 0.5s ease-out;"></div>
+            </div>
+            <div id="gd-calorie-pct" style="font-size: 0.72rem; color: var(--text-2); margin-top: 8px; font-weight: 600;">0% reached</div>
           </div>
-          <div class="goal-card">
+          <div class="goal-card water">
             <div class="gc-icon">💧</div>
             <div class="gc-label">Water Intake</div>
             <div id="gd-water" class="gc-value blue">—</div>
             <div class="gc-unit">litres / day</div>
+            <div class="goal-progress-container" style="width: 100%; height: 6px; background: rgba(255,255,255,0.05); border-radius: 3px; overflow: hidden; margin-top: 16px;">
+              <div id="gd-water-bar" style="height: 100%; width: 0%; background: var(--blue); border-radius: 3px; transition: width 0.5s ease-out;"></div>
+            </div>
+            <div id="gd-water-pct" style="font-size: 0.72rem; color: var(--text-2); margin-top: 8px; font-weight: 600;">0% reached</div>
           </div>
-          <div class="goal-card">
+          <div class="goal-card workout">
             <div class="gc-icon">🏋</div>
-            <div class="gc-label">Workout</div>
-            <div id="gd-workout" class="gc-value">—</div>
-            <button id="gd-complete-btn" class="btn-success mt8" onclick="markWorkoutDone()">Mark Done</button>
+            <div class="gc-label">Workout Status</div>
+            <div id="gd-workout" class="gc-value green">—</div>
+            <div class="gc-unit" id="gd-workout-status-label" style="margin-bottom: 8px;">Pending</div>
+            <div class="goal-progress-container" style="width: 100%; height: 6px; background: rgba(255,255,255,0.05); border-radius: 3px; overflow: hidden; margin-top: 16px;">
+              <div id="gd-workout-bar" style="height: 100%; width: 0%; background: var(--green); border-radius: 3px; transition: width 0.5s ease-out;"></div>
+            </div>
+            <div id="gd-workout-pct" style="font-size: 0.72rem; color: var(--text-2); margin-top: 8px; font-weight: 600;">0% completed</div>
+            <button id="gd-complete-btn" class="btn-success mt12" onclick="markWorkoutDone()" style="width: 100%; font-size: 0.85rem; padding: 8px 12px; margin-top: 12px;">Mark Done ✓</button>
           </div>
         </div>
 

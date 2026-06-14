@@ -224,7 +224,7 @@ function fillOverview(data) {
   if (g) {
     document.getElementById('dash-calories').textContent = g.calories;
     document.getElementById('dash-water')   .textContent = g.waterIntake.toFixed(1);
-    setWorkoutUI(g.workoutCompleted);
+    updateGoalsUI(g);
   }
 
   if (data.workoutPlan) {
@@ -332,19 +332,32 @@ function setWorkoutUI(done) {
   const btn   = document.getElementById('complete-btn');
   const gdTxt = document.getElementById('gd-workout');
   const gdBtn = document.getElementById('gd-complete-btn');
+  const gdBar = document.getElementById('gd-workout-bar');
+  const gdPct = document.getElementById('gd-workout-pct');
+  const gdStatusLabel = document.getElementById('gd-workout-status-label');
 
   if (done) {
-    txt.textContent    = '🎉 Workout completed today! Great job!';
-    txt.style.color    = '#22c55e';
+    if (txt) {
+      txt.textContent    = '🎉 Workout completed today! Great job!';
+      txt.style.color    = '#22c55e';
+    }
     if (btn)   btn.style.display   = 'none';
     if (gdTxt) gdTxt.textContent   = '✓ Completed';
     if (gdBtn) gdBtn.style.display = 'none';
+    if (gdBar) gdBar.style.width   = '100%';
+    if (gdPct) gdPct.textContent   = '100% completed';
+    if (gdStatusLabel) gdStatusLabel.textContent = 'Completed';
   } else {
-    txt.textContent    = '🏋 Workout not yet completed today';
-    txt.style.color    = '';
+    if (txt) {
+      txt.textContent    = '🏋 Workout not yet completed today';
+      txt.style.color    = '';
+    }
     if (btn)   btn.style.display   = '';
     if (gdTxt) gdTxt.textContent   = '✗ Pending';
     if (gdBtn) gdBtn.style.display = '';
+    if (gdBar) gdBar.style.width   = '0%';
+    if (gdPct) gdPct.textContent   = '0% completed';
+    if (gdStatusLabel) gdStatusLabel.textContent = 'Pending';
   }
 }
 
@@ -507,15 +520,40 @@ function toggleExercise(exId) {
 // DAILY GOALS
 // ══════════════════════════════════════════════════════════════
 
+function updateGoalsUI(g) {
+  if (!g) return;
+
+  const calEl = document.getElementById('gd-calories');
+  const waterEl = document.getElementById('gd-water');
+  if (calEl) calEl.textContent = g.calories;
+  if (waterEl) waterEl.textContent = g.waterIntake.toFixed(1);
+
+  const calTarget = g.calories || 2000;
+  const calConsumed = g.caloriesConsumed || 0;
+  const calPct = Math.min(100, Math.round((calConsumed / calTarget) * 100));
+  const calBar = document.getElementById('gd-calorie-bar');
+  const calPctText = document.getElementById('gd-calorie-pct');
+  if (calBar) calBar.style.width = calPct + '%';
+  if (calPctText) calPctText.textContent = `${calConsumed} / ${calTarget} kcal (${calPct}% reached)`;
+
+  const waterTarget = g.waterIntake || 3.0;
+  const waterConsumed = g.waterConsumed || 0;
+  const waterPct = Math.min(100, Math.round((waterConsumed / waterTarget) * 100));
+  const waterBar = document.getElementById('gd-water-bar');
+  const waterPctText = document.getElementById('gd-water-pct');
+  if (waterBar) waterBar.style.width = waterPct + '%';
+  if (waterPctText) waterPctText.textContent = `${waterConsumed.toFixed(1)} / ${waterTarget.toFixed(1)} L (${waterPct}% reached)`;
+
+  setWorkoutUI(g.workoutCompleted);
+}
+
 async function loadGoals() {
   if (!currentUser) return;
   try {
     const res = await get(`/goals/${currentUser.id}`);
     if (res.success && res.data) {
       const g = res.data;
-      document.getElementById('gd-calories').textContent = g.calories;
-      document.getElementById('gd-water')   .textContent = g.waterIntake.toFixed(1);
-      setWorkoutUI(g.workoutCompleted);
+      updateGoalsUI(g);
     }
     
     try {
@@ -963,9 +1001,7 @@ function refreshDashboard(data) {
   if (!document.getElementById('panel-goals').classList.contains('hidden')) {
     const g = data.goal;
     if (g) {
-      document.getElementById('gd-calories').textContent = g.calories;
-      document.getElementById('gd-water')   .textContent = g.waterIntake.toFixed(1);
-      setWorkoutUI(g.workoutCompleted);
+      updateGoalsUI(g);
     }
   }
 }

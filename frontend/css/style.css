@@ -8,6 +8,7 @@
 
 /* ─── Design tokens ─── */
 :root {
+  --primary:      var(--red);
   --black:        #050508;
   --black-sec:    #0a0a0f;
   --surface:      rgba(15, 15, 20, 0.45);
@@ -920,9 +921,19 @@ body   {
               transform    var(--dur) var(--ease);
 }
 .goal-card:hover { 
-  border-color: var(--red); 
   transform: translateY(-4px); 
-  box-shadow: 0 8px 24px rgba(255,59,59,0.08);
+}
+.goal-card.calorie:hover { 
+  border-color: var(--red); 
+  box-shadow: 0 8px 24px rgba(255,51,51,0.12);
+}
+.goal-card.water:hover { 
+  border-color: var(--blue); 
+  box-shadow: 0 8px 24px rgba(14,165,233,0.12);
+}
+.goal-card.workout:hover { 
+  border-color: var(--green); 
+  box-shadow: 0 8px 24px rgba(16,185,129,0.12);
 }
 .gc-icon  { font-size: 2.4rem; margin-bottom: 12px; animation: floatY 3s ease-in-out infinite; display: inline-block; }
 .gc-label {
