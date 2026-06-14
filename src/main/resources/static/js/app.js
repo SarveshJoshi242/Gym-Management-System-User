@@ -518,6 +518,7 @@ async function loadGoals() {
     } catch (err) { console.error('[History Error]', err); }
     
     renderCalendar();
+    loadWeightHistory();
   } catch (err) {
     console.error('[Goals Error]', err);
     handleAuthError(err);
@@ -1305,5 +1306,149 @@ async function submitEditWater(e) {
     showError('edit-water-error', 'Error updating water log.');
   } finally {
     setLoading('edit-water-save-btn', false);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// WEIGHT TRACKER MODULE
+// ══════════════════════════════════════════════════════════════
+
+let weightChartInstance = null;
+
+async function loadWeightHistory() {
+  if (!currentUser) return;
+  try {
+    const res = await get(`/weight/history/${currentUser.id}`);
+    if (res.success && res.data) {
+      renderWeightChart(res.data);
+    }
+  } catch (err) {
+    console.error('[Weight History Error]', err);
+  }
+}
+
+function renderWeightChart(history) {
+  const ctx = document.getElementById('weightHistoryChart');
+  if (!ctx) return;
+
+  if (weightChartInstance) {
+    weightChartInstance.destroy();
+  }
+
+  // Parse labels and data
+  const sorted = [...history].sort((a, b) => {
+    let ad = Array.isArray(a.logDate) ? new Date(a.logDate[0], a.logDate[1] - 1, a.logDate[2]) : new Date(a.logDate);
+    let bd = Array.isArray(b.logDate) ? new Date(b.logDate[0], b.logDate[1] - 1, b.logDate[2]) : new Date(b.logDate);
+    return ad - bd;
+  });
+
+  const labels = sorted.map(item => {
+    let date;
+    if (Array.isArray(item.logDate)) {
+      date = new Date(item.logDate[0], item.logDate[1] - 1, item.logDate[2]);
+    } else {
+      date = new Date(item.logDate);
+    }
+    return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  });
+
+  const data = sorted.map(item => item.weight);
+
+  const isDark = true;
+  Chart.defaults.color = isDark ? '#e4e4e7' : '#666';
+  Chart.defaults.font.family = "'Inter', sans-serif";
+
+  weightChartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Weight',
+        data: data,
+        borderColor: '#eab308',
+        backgroundColor: 'rgba(234, 179, 8, 0.1)',
+        borderWidth: 2,
+        tension: 0.3,
+        fill: true,
+        pointBackgroundColor: '#eab308',
+        pointRadius: 4,
+        pointHoverRadius: 6
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: false
+        },
+        tooltip: {
+          backgroundColor: 'rgba(0,0,0,0.8)',
+          titleFont: { size: 14 },
+          bodyFont: { size: 13 },
+          padding: 12,
+          cornerRadius: 8,
+          callbacks: {
+            label: function(context) {
+              return `Weight: ${context.parsed.y} kg`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: {
+            color: 'rgba(255, 255, 255, 0.05)',
+            borderColor: 'rgba(255, 255, 255, 0.1)'
+          }
+        },
+        y: {
+          grid: {
+            color: 'rgba(255, 255, 255, 0.05)',
+            borderColor: 'rgba(255, 255, 255, 0.1)'
+          },
+          ticks: {
+            callback: function(value) {
+              return value + ' kg';
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+async function logWeightTracker() {
+  if (!currentUser) return;
+  const input = document.getElementById('weight-tracker-input');
+  const weight = +input.value;
+  if (weight <= 20.0 || weight > 400.0) {
+    showToast('Please enter a weight between 20 and 400 kg.');
+    return;
+  }
+
+  setLoading('weight-tracker-btn', true);
+  try {
+    const res = await post('/weight', { userId: currentUser.id, weight });
+    if (res.success && res.data) {
+      showToast('Weight logged successfully!');
+      input.value = '';
+      currentUser = res.data.user;
+      
+      // Update UI displays for new user weight/BMI
+      refreshDashboard({ user: currentUser, goal: res.data.goal });
+      renderWeightChart(res.data.history);
+      
+      // Update goals panel target displays
+      document.getElementById('gd-calories').textContent = res.data.goal.calories;
+      document.getElementById('gd-water')   .textContent = res.data.goal.waterIntake.toFixed(1);
+    } else {
+      showToast(res.message || 'Failed to log weight.');
+    }
+  } catch (err) {
+    console.error('[Log Weight Error]', err);
+    showToast('Error logging weight.');
+  } finally {
+    setLoading('weight-tracker-btn', false);
   }
 }

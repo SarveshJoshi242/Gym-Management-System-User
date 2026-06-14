@@ -6,12 +6,15 @@ import com.gymplus.model.User;
 import com.gymplus.model.ChatLog;
 import com.gymplus.model.FoodEntry;
 import com.gymplus.model.WaterLog;
+import com.gymplus.model.WeightLog;
 import com.gymplus.repository.DailyGoalRepository;
+import org.springframework.data.repository.query.Param;
 import com.gymplus.repository.ExerciseRepository;
 import com.gymplus.repository.UserRepository;
 import com.gymplus.repository.ChatLogRepository;
 import com.gymplus.repository.FoodEntryRepository;
 import com.gymplus.repository.WaterLogRepository;
+import com.gymplus.repository.WeightLogRepository;
 import com.gymplus.security.JwtUtil;
 import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,6 +59,9 @@ public class ApiController {
 
     @Autowired
     private WaterLogRepository waterLogRepository;
+
+    @Autowired
+    private WeightLogRepository weightLogRepository;
 
     @Autowired
     private JwtUtil jwtUtil;
@@ -629,6 +635,54 @@ public class ApiController {
         if (userOpt.isPresent()) {
             return ResponseEntity.ok(successResponse(getOrCreateDailyGoal(userOpt.get())));
         }
+        return ResponseEntity.ok(errorResponse("User not found"));
+    }
+
+    @GetMapping("/weight/history/{userId}")
+    public ResponseEntity<?> getWeightHistory(@PathVariable Integer userId) {
+        List<WeightLog> history = weightLogRepository.findByUserIdOrderByLogDateAsc(userId);
+        return ResponseEntity.ok(successResponse(history));
+    }
+
+    @PostMapping("/weight")
+    public ResponseEntity<?> logWeight(@RequestBody Map<String, Object> req) {
+        Integer userId = ((Number) req.get("userId")).intValue();
+        Double weight = ((Number) req.get("weight")).doubleValue();
+        if (weight <= 20.0 || weight > 400.0) {
+            return ResponseEntity.ok(errorResponse("Weight must be between 20 and 400 kg."));
+        }
+
+        LocalDate today = LocalDate.now();
+        Optional<WeightLog> existingOpt = weightLogRepository.findByUserIdAndLogDate(userId, today);
+        WeightLog log;
+        if (existingOpt.isPresent()) {
+            log = existingOpt.get();
+            log.setWeight(weight);
+        } else {
+            log = new WeightLog();
+            log.setUserId(userId);
+            log.setWeight(weight);
+            log.setLogDate(today);
+        }
+        weightLogRepository.save(log);
+
+        // Sync main User's weight as well
+        Optional<User> userOpt = userRepository.findById(userId);
+        if (userOpt.isPresent()) {
+            User user = userOpt.get();
+            user.setWeight(weight);
+            userRepository.save(user);
+            
+            // Recalculate daily goal targets (as calorie target is based on weight)
+            DailyGoal goal = getOrCreateDailyGoal(user);
+            
+            Map<String, Object> data = new HashMap<>();
+            data.put("user", user);
+            data.put("goal", goal);
+            data.put("history", weightLogRepository.findByUserIdOrderByLogDateAsc(userId));
+            return ResponseEntity.ok(successResponse(data));
+        }
+
         return ResponseEntity.ok(errorResponse("User not found"));
     }
 
