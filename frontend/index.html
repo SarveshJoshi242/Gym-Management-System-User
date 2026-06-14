@@ -174,6 +174,9 @@
         <button class="nav-item" data-panel="goals" onclick="showPanel('goals')">
           <span class="nav-icon">🎯</span><span>Daily Goals</span>
         </button>
+        <button class="nav-item" data-panel="logs" onclick="showPanel('logs')">
+          <span class="nav-icon">📋</span><span>Intake Logs</span>
+        </button>
         <button class="nav-item" data-panel="recommend" onclick="showPanel('recommend')">
           <span class="nav-icon">🧠</span><span>Recommend</span>
         </button>
@@ -515,6 +518,36 @@
         </div>
       </section>
 
+      <!-- ── Logs Panel ── -->
+      <section id="panel-logs" class="panel hidden">
+        <h2 class="panel-title" style="display: flex; align-items: center; gap: 8px;">
+          <span>📋</span> Intake Logs
+        </h2>
+        <p class="panel-desc">Manage your logged food items and water intake for today.</p>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; margin-top: 24px;">
+          <!-- Food Logs List -->
+          <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: var(--radius-sm); padding: 20px;">
+            <div style="font-size: 0.85rem; font-weight: 700; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+              <span>🍎</span> Logged Food (Today)
+            </div>
+            <div id="food-logs-container" style="display: flex; flex-direction: column; gap: 12px; max-height: 400px; overflow-y: auto; padding-right: 4px;">
+              <!-- Dynamic items -->
+            </div>
+          </div>
+
+          <!-- Water Logs List -->
+          <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: var(--radius-sm); padding: 20px;">
+            <div style="font-size: 0.85rem; font-weight: 700; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+              <span>💧</span> Logged Water (Today)
+            </div>
+            <div id="water-logs-container" style="display: flex; flex-direction: column; gap: 12px; max-height: 400px; overflow-y: auto; padding-right: 4px;">
+              <!-- Dynamic items -->
+            </div>
+          </div>
+        </div>
+      </section>
+
     </main>
 
     <!-- Bottom Navigation Bar (Mobile only) -->
@@ -530,6 +563,10 @@
       <button class="nav-item" data-panel="goals" onclick="showPanel('goals')">
         <span class="nav-icon">🎯</span>
         <span class="nav-label">Daily Goals</span>
+      </button>
+      <button class="nav-item" data-panel="logs" onclick="showPanel('logs')">
+        <span class="nav-icon">📋</span>
+        <span class="nav-label">Logs</span>
       </button>
       <button class="nav-item" data-panel="recommend" onclick="showPanel('recommend')">
         <span class="nav-icon">🧠</span>
@@ -626,6 +663,70 @@
       </div>
       <div class="modal-actions" style="padding: 16px 24px; display: flex; justify-content: flex-end; border-top: 1px solid var(--border);">
         <button class="btn-primary" onclick="closeInfoModal()" style="background: linear-gradient(135deg, var(--blue), #0284c7); box-shadow: 0 4px 12px rgba(14,165,233,0.2);">Got It</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── EDIT FOOD MODAL ── -->
+  <div id="edit-food-modal" class="modal-backdrop hidden" onclick="handleEditFoodBackdropClick(event)">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="edit-food-title" style="border-top-color: var(--red);">
+      <div class="modal-header">
+        <h2 id="edit-food-title" class="modal-title">✏️ Edit Food Log</h2>
+        <button class="modal-close" onclick="closeEditFoodModal()" aria-label="Close">✕</button>
+      </div>
+
+      <div class="modal-body" style="padding: 24px;">
+        <form id="edit-food-form" onsubmit="submitEditFood(event)">
+          <input type="hidden" id="edit-food-id" />
+          <div class="form-group">
+            <label for="edit-food-item">Food Item Name</label>
+            <input id="edit-food-item" type="text" placeholder="e.g., Chicken Breast" required />
+          </div>
+          <div class="form-group">
+            <label for="edit-food-cal">Calories (kcal)</label>
+            <input id="edit-food-cal" type="number" min="1" max="5000" placeholder="e.g., 350" required />
+          </div>
+
+          <div id="edit-food-error" class="form-error hidden" role="alert"></div>
+
+          <div class="modal-actions">
+            <button type="button" class="btn-outline" onclick="closeEditFoodModal()">Cancel</button>
+            <button type="submit" class="btn-primary" id="edit-food-save-btn" style="background: var(--red); box-shadow: 0 4px 12px rgba(255,51,51,0.2);">
+              <span class="btn-text">Save Changes</span>
+              <span class="btn-loader hidden"><span class="spinner"></span> Saving…</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── EDIT WATER MODAL ── -->
+  <div id="edit-water-modal" class="modal-backdrop hidden" onclick="handleEditWaterBackdropClick(event)">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="edit-water-title" style="border-top-color: var(--blue);">
+      <div class="modal-header">
+        <h2 id="edit-water-title" class="modal-title">✏️ Edit Water Log</h2>
+        <button class="modal-close" onclick="closeEditWaterModal()" aria-label="Close">✕</button>
+      </div>
+
+      <div class="modal-body" style="padding: 24px;">
+        <form id="edit-water-form" onsubmit="submitEditWater(event)">
+          <input type="hidden" id="edit-water-id" />
+          <div class="form-group">
+            <label for="edit-water-amount">Amount in Litres</label>
+            <input id="edit-water-amount" type="number" min="0.01" max="5.0" step="any" placeholder="e.g., 0.5" required />
+          </div>
+
+          <div id="edit-water-error" class="form-error hidden" role="alert"></div>
+
+          <div class="modal-actions">
+            <button type="button" class="btn-outline" onclick="closeEditWaterModal()">Cancel</button>
+            <button type="submit" class="btn-primary" id="edit-water-save-btn" style="background: linear-gradient(135deg, var(--blue), #0284c7); box-shadow: 0 4px 12px rgba(14,165,233,0.2);">
+              <span class="btn-text">Save Changes</span>
+              <span class="btn-loader hidden"><span class="spinner"></span> Saving…</span>
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   </div>

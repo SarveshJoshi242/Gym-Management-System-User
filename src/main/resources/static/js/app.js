@@ -355,6 +355,7 @@ async function showPanel(name) {
 
   if (name === 'goals')     loadGoals();
   if (name === 'recommend') loadRecommendations();
+  if (name === 'logs')      loadTodayLogs();
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -1070,4 +1071,239 @@ function bmiCat(bmi) {
   if (bmi < 25)   return 'Normal';
   if (bmi < 30)   return 'Overweight';
   return 'Obese';
+}
+
+// ══════════════════════════════════════════════════════════════
+// INTAKE LOGS MODULE
+// ══════════════════════════════════════════════════════════════
+
+async function loadTodayLogs() {
+  if (!currentUser) return;
+  const foodLogsContainer = document.getElementById('food-logs-container');
+  const waterLogsContainer = document.getElementById('water-logs-container');
+  
+  foodLogsContainer.innerHTML = '<div style="color: var(--text-2); font-size: 0.9rem;">Loading food logs…</div>';
+  waterLogsContainer.innerHTML = '<div style="color: var(--text-2); font-size: 0.9rem;">Loading water logs…</div>';
+
+  try {
+    const foodRes = await get(`/food/today/${currentUser.id}`);
+    const waterRes = await get(`/water/today/${currentUser.id}`);
+
+    if (foodRes.success && foodRes.data) {
+      renderFoodLogs(foodRes.data);
+    } else {
+      foodLogsContainer.innerHTML = '<div style="color: var(--text-2); font-size: 0.9rem;">Failed to load food logs.</div>';
+    }
+
+    if (waterRes.success && waterRes.data) {
+      renderWaterLogs(waterRes.data);
+    } else {
+      waterLogsContainer.innerHTML = '<div style="color: var(--text-2); font-size: 0.9rem;">Failed to load water logs.</div>';
+    }
+  } catch (err) {
+    console.error('[Load Logs Error]', err);
+    foodLogsContainer.innerHTML = '<div style="color: var(--text-2); font-size: 0.9rem;">Error loading logs.</div>';
+    waterLogsContainer.innerHTML = '<div style="color: var(--text-2); font-size: 0.9rem;">Error loading logs.</div>';
+  }
+}
+
+function renderFoodLogs(entries) {
+  const container = document.getElementById('food-logs-container');
+  if (entries.length === 0) {
+    container.innerHTML = '<div style="color: var(--text-2); font-size: 0.9rem; font-style: italic;">No food logged today.</div>';
+    return;
+  }
+  container.innerHTML = entries.map(item => `
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: var(--radius-xs);">
+      <div>
+        <div style="font-weight: 600; color: white;">${escapeHtml(item.foodItem)}</div>
+        <div style="font-size: 0.8rem; color: var(--text-2);">${item.calories} kcal</div>
+      </div>
+      <div style="display: flex; gap: 12px;">
+        <button onclick="openEditFoodModal(${item.id}, '${escapeJsString(item.foodItem)}', ${item.calories})" style="background: none; border: none; color: var(--text-2); cursor: pointer; font-size: 1rem; padding: 4px; transition: transform var(--dur);" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'" title="Edit">✏️</button>
+        <button onclick="deleteFoodLog(${item.id})" style="background: none; border: none; color: var(--text-2); cursor: pointer; font-size: 1rem; padding: 4px; transition: transform var(--dur);" onmouseover="this.style.transform='scale(1.2)';" onmouseout="this.style.transform='scale(1)'" title="Delete">🗑️</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderWaterLogs(logs) {
+  const container = document.getElementById('water-logs-container');
+  if (logs.length === 0) {
+    container.innerHTML = '<div style="color: var(--text-2); font-size: 0.9rem; font-style: italic;">No water logged today.</div>';
+    return;
+  }
+  container.innerHTML = logs.map(item => `
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: var(--radius-xs);">
+      <div>
+        <div style="font-weight: 600; color: white;">${item.amount.toFixed(2)} L</div>
+        <div style="font-size: 0.8rem; color: var(--text-2);">Water Intake</div>
+      </div>
+      <div style="display: flex; gap: 12px;">
+        <button onclick="openEditWaterModal(${item.id}, ${item.amount})" style="background: none; border: none; color: var(--text-2); cursor: pointer; font-size: 1rem; padding: 4px; transition: transform var(--dur);" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'" title="Edit">✏️</button>
+        <button onclick="deleteWaterLog(${item.id})" style="background: none; border: none; color: var(--text-2); cursor: pointer; font-size: 1rem; padding: 4px; transition: transform var(--dur);" onmouseover="this.style.transform='scale(1.2)';" onmouseout="this.style.transform='scale(1)'" title="Delete">🗑️</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+}
+
+function escapeJsString(str) {
+  if (!str) return '';
+  return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"');
+}
+
+async function deleteFoodLog(id) {
+  if (!confirm('Are you sure you want to delete this food entry?')) return;
+  try {
+    const res = await fetch(API + `/food/${id}`, {
+      method: 'DELETE',
+      headers: authHeaders()
+    });
+    if (res.status === 401 || res.status === 403) {
+      handleUnauthorized();
+      return;
+    }
+    const data = await res.json();
+    if (data.success) {
+      showToast('Food entry deleted.');
+      refreshDashboard({ user: currentUser, goal: data.data });
+      loadTodayLogs();
+    } else {
+      showToast(data.message || 'Failed to delete food entry.');
+    }
+  } catch (e) {
+    showToast('Error deleting food entry.');
+  }
+}
+
+async function deleteWaterLog(id) {
+  if (!confirm('Are you sure you want to delete this water log?')) return;
+  try {
+    const res = await fetch(API + `/water/${id}`, {
+      method: 'DELETE',
+      headers: authHeaders()
+    });
+    if (res.status === 401 || res.status === 403) {
+      handleUnauthorized();
+      return;
+    }
+    const data = await res.json();
+    if (data.success) {
+      showToast('Water log deleted.');
+      refreshDashboard({ user: currentUser, goal: data.data });
+      loadTodayLogs();
+    } else {
+      showToast(data.message || 'Failed to delete water log.');
+    }
+  } catch (e) {
+    showToast('Error deleting water log.');
+  }
+}
+
+// FOOD MODAL HANDLERS
+function openEditFoodModal(id, item, calories) {
+  document.getElementById('edit-food-id').value = id;
+  document.getElementById('edit-food-item').value = item;
+  document.getElementById('edit-food-cal').value = calories;
+  clearError('edit-food-error');
+  setLoading('edit-food-save-btn', false);
+  document.getElementById('edit-food-modal').classList.remove('hidden');
+}
+
+function closeEditFoodModal() {
+  document.getElementById('edit-food-modal').classList.add('hidden');
+}
+
+function handleEditFoodBackdropClick(e) {
+  if (e.target.id === 'edit-food-modal') closeEditFoodModal();
+}
+
+async function submitEditFood(e) {
+  e.preventDefault();
+  clearError('edit-food-error');
+  setLoading('edit-food-save-btn', true);
+
+  const id = document.getElementById('edit-food-id').value;
+  const foodItem = document.getElementById('edit-food-item').value.trim();
+  const calories = +document.getElementById('edit-food-cal').value;
+
+  if (!foodItem) {
+    showError('edit-food-error', 'Food item name cannot be empty.');
+    setLoading('edit-food-save-btn', false);
+    return;
+  }
+  if (calories <= 0 || calories > 5000) {
+    showError('edit-food-error', 'Calories must be between 1 and 5,000 kcal.');
+    setLoading('edit-food-save-btn', false);
+    return;
+  }
+
+  try {
+    const res = await put(`/food/${id}`, { foodItem, calories });
+    if (res.success) {
+      showToast('Food entry updated!');
+      closeEditFoodModal();
+      refreshDashboard({ user: currentUser, goal: res.data });
+      loadTodayLogs();
+    } else {
+      showError('edit-food-error', res.message || 'Failed to update food entry.');
+    }
+  } catch(err) {
+    showError('edit-food-error', 'Error updating food entry.');
+  } finally {
+    setLoading('edit-food-save-btn', false);
+  }
+}
+
+// WATER MODAL HANDLERS
+function openEditWaterModal(id, amount) {
+  document.getElementById('edit-water-id').value = id;
+  document.getElementById('edit-water-amount').value = amount;
+  clearError('edit-water-error');
+  setLoading('edit-water-save-btn', false);
+  document.getElementById('edit-water-modal').classList.remove('hidden');
+}
+
+function closeEditWaterModal() {
+  document.getElementById('edit-water-modal').classList.add('hidden');
+}
+
+function handleEditWaterBackdropClick(e) {
+  if (e.target.id === 'edit-water-modal') closeEditWaterModal();
+}
+
+async function submitEditWater(e) {
+  e.preventDefault();
+  clearError('edit-water-error');
+  setLoading('edit-water-save-btn', true);
+
+  const id = document.getElementById('edit-water-id').value;
+  const amount = +document.getElementById('edit-water-amount').value;
+
+  if (amount <= 0 || amount > 5.0) {
+    showError('edit-water-error', 'Water amount must be between 0.01 and 5.0 Litres.');
+    setLoading('edit-water-save-btn', false);
+    return;
+  }
+
+  try {
+    const res = await put(`/water/${id}`, { amount });
+    if (res.success) {
+      showToast('Water log updated!');
+      closeEditWaterModal();
+      refreshDashboard({ user: currentUser, goal: res.data });
+      loadTodayLogs();
+    } else {
+      showError('edit-water-error', res.message || 'Failed to update water log.');
+    }
+  } catch(err) {
+    showError('edit-water-error', 'Error updating water log.');
+  } finally {
+    setLoading('edit-water-save-btn', false);
+  }
 }

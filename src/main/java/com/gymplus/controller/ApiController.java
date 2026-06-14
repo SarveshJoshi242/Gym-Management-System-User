@@ -534,6 +534,104 @@ public class ApiController {
         return ResponseEntity.ok(errorResponse("User not found"));
     }
 
+    @GetMapping("/food/today/{userId}")
+    public ResponseEntity<?> getTodayFood(@PathVariable Integer userId) {
+        LocalDate today = LocalDate.now();
+        List<FoodEntry> entries = foodEntryRepository.findByUserIdAndEntryDate(userId, today);
+        return ResponseEntity.ok(successResponse(entries));
+    }
+
+    @GetMapping("/water/today/{userId}")
+    public ResponseEntity<?> getTodayWater(@PathVariable Integer userId) {
+        LocalDate today = LocalDate.now();
+        List<WaterLog> logs = waterLogRepository.findByUserIdAndLogDate(userId, today);
+        return ResponseEntity.ok(successResponse(logs));
+    }
+
+    @PutMapping("/food/{id}")
+    public ResponseEntity<?> editFood(@PathVariable Integer id, @RequestBody Map<String, Object> req) {
+        Optional<FoodEntry> entryOpt = foodEntryRepository.findById(id);
+        if (!entryOpt.isPresent()) {
+            return ResponseEntity.ok(errorResponse("Food entry not found."));
+        }
+        FoodEntry entry = entryOpt.get();
+        String item = (String) req.get("foodItem");
+        if (item == null || item.trim().isEmpty()) {
+            return ResponseEntity.ok(errorResponse("Food item name cannot be empty."));
+        }
+        if (item.length() > 100) {
+            return ResponseEntity.ok(errorResponse("Food item name is too long."));
+        }
+        Integer cals = ((Number) req.get("calories")).intValue();
+        if (cals <= 0 || cals > 5000) {
+            return ResponseEntity.ok(errorResponse("Calories must be between 1 and 5000 kcal."));
+        }
+
+        entry.setFoodItem(item.trim());
+        entry.setCalories(cals);
+        foodEntryRepository.save(entry);
+
+        Optional<User> userOpt = userRepository.findById(entry.getUserId());
+        if (userOpt.isPresent()) {
+            return ResponseEntity.ok(successResponse(getOrCreateDailyGoal(userOpt.get())));
+        }
+        return ResponseEntity.ok(errorResponse("User not found"));
+    }
+
+    @DeleteMapping("/food/{id}")
+    public ResponseEntity<?> deleteFood(@PathVariable Integer id) {
+        Optional<FoodEntry> entryOpt = foodEntryRepository.findById(id);
+        if (!entryOpt.isPresent()) {
+            return ResponseEntity.ok(errorResponse("Food entry not found."));
+        }
+        FoodEntry entry = entryOpt.get();
+        foodEntryRepository.delete(entry);
+
+        Optional<User> userOpt = userRepository.findById(entry.getUserId());
+        if (userOpt.isPresent()) {
+            return ResponseEntity.ok(successResponse(getOrCreateDailyGoal(userOpt.get())));
+        }
+        return ResponseEntity.ok(errorResponse("User not found"));
+    }
+
+    @PutMapping("/water/{id}")
+    public ResponseEntity<?> editWater(@PathVariable Integer id, @RequestBody Map<String, Object> req) {
+        Optional<WaterLog> logOpt = waterLogRepository.findById(id);
+        if (!logOpt.isPresent()) {
+            return ResponseEntity.ok(errorResponse("Water log not found."));
+        }
+        WaterLog log = logOpt.get();
+        Double amt = ((Number) req.get("amount")).doubleValue();
+        if (amt <= 0.0 || amt > 5.0) {
+            return ResponseEntity.ok(errorResponse("Water amount must be between 0.01 and 5.0 Litres."));
+        }
+
+        log.setAmount(amt);
+        waterLogRepository.save(log);
+
+        Optional<User> userOpt = userRepository.findById(log.getUserId());
+        if (userOpt.isPresent()) {
+            return ResponseEntity.ok(successResponse(getOrCreateDailyGoal(userOpt.get())));
+        }
+        return ResponseEntity.ok(errorResponse("User not found"));
+    }
+
+    @DeleteMapping("/water/{id}")
+    public ResponseEntity<?> deleteWater(@PathVariable Integer id) {
+        Optional<WaterLog> logOpt = waterLogRepository.findById(id);
+        if (!logOpt.isPresent()) {
+            return ResponseEntity.ok(errorResponse("Water log not found."));
+        }
+        WaterLog log = logOpt.get();
+        waterLogRepository.delete(log);
+
+        Optional<User> userOpt = userRepository.findById(log.getUserId());
+        if (userOpt.isPresent()) {
+            return ResponseEntity.ok(successResponse(getOrCreateDailyGoal(userOpt.get())));
+        }
+        return ResponseEntity.ok(errorResponse("User not found"));
+    }
+
     @PostMapping("/assistant")
     public ResponseEntity<?> chatAssistant(@RequestBody Map<String, Object> request) {
         String query = (String) request.get("query");
