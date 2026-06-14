@@ -648,6 +648,7 @@ async function logFood() {
       return;
   }
   
+  setLoading('food-log-btn', true);
   try {
       const res = await post('/food', { userId: currentUser.id, foodItem: item, calories: cals });
       if (res.success) {
@@ -661,6 +662,8 @@ async function logFood() {
   } catch(e) {
     handleAuthError(e);
     showToast('Error logging food.');
+  } finally {
+    setLoading('food-log-btn', false);
   }
 }
 
@@ -672,6 +675,7 @@ async function logWater() {
       return;
   }
   
+  setLoading('water-log-btn', true);
   try {
       const res = await post('/water', { userId: currentUser.id, amount: amt });
       if (res.success) {
@@ -684,6 +688,8 @@ async function logWater() {
   } catch(e) {
     handleAuthError(e);
     showToast('Error logging water.');
+  } finally {
+    setLoading('water-log-btn', false);
   }
 }
 

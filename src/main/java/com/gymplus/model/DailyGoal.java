@@ -6,7 +6,9 @@ import java.time.LocalDate;
 
 @Data
 @Entity
-@Table(name = "daily_goals")
+@Table(name = "daily_goals", indexes = {
+    @Index(name = "idx_daily_goals_user_date", columnList = "user_id, goal_date")
+})
 public class DailyGoal {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

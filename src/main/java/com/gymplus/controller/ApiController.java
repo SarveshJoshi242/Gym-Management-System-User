@@ -124,12 +124,10 @@ public class ApiController {
             goal.setWaterIntake(baseWater);
         }
         
-        List<FoodEntry> foods = foodEntryRepository.findByUserIdAndEntryDate(user.getId(), today);
-        int totalCals = foods.stream().mapToInt(FoodEntry::getCalories).sum();
+        Integer totalCals = foodEntryRepository.sumCaloriesByUserIdAndEntryDate(user.getId(), today);
         goal.setCaloriesConsumed(totalCals);
         
-        List<WaterLog> waters = waterLogRepository.findByUserIdAndLogDate(user.getId(), today);
-        double totalWater = waters.stream().mapToDouble(WaterLog::getAmount).sum();
+        Double totalWater = waterLogRepository.sumAmountByUserIdAndLogDate(user.getId(), today);
         goal.setWaterConsumed(Math.round(totalWater * 100.0) / 100.0);
         
         return dailyGoalRepository.save(goal);
