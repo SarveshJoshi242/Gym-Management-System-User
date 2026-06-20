@@ -13,7 +13,6 @@ GymPlus is a modern, AI-powered gym management dashboard built to track fitness 
 - **Smart Diet & Workout Planner**: Automated diet tips and workout structures based on user profile and BMI.
 - **Modern UI/UX**: Dark mode aesthetic with glassmorphism elements, custom scrollbars, and fluid animations built with vanilla HTML/CSS/JS.
 - **Secure Authentication**: Encrypted user credentials using BCrypt.
-- **Automatic Self-Pinging Service**: Periodically pings its own `/api/health` endpoint every 10 minutes in production (using `RENDER_EXTERNAL_URL`), solving Render's 15-minute inactivity spin-down issue.
 - **Low-Latency LLM Failover**: Configured with optimized Google Gemini 3.x models and tight HTTP timeouts (3s connect, 12s read) to ensure rapid assistant responses.
 
 ---
